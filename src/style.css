@@ -224,17 +224,23 @@ body {
   width: auto;
 }
 
-/** Соцссылки Quai — по центру снизу (отдельно от доната) */
+/** Соцссылки Quai — по центру снизу (отдельно от доната); три равные колонки */
 .quai-social {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   bottom: calc(var(--safe-bottom) + 12px);
-  z-index: 29;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(6px, 1.2vw, 10px);
+  /** Выше .panel-donate-wrap (30), иначе третья кнопка перекрывается донатом на узких экранах */
+  z-index: 31;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: clamp(4px, 1.2vw, 8px);
+  row-gap: 4px;
+  width: min(360px, calc(100vw - max(16px, var(--safe-left)) - max(16px, var(--safe-right))));
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  pointer-events: auto;
 }
 
 .quai-social__link {
@@ -242,13 +248,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: clamp(11px, 1.35vw, 13px);
+  min-width: 0;
+  min-height: 26px;
+  padding: 4px 5px;
+  border-radius: 8px;
+  font-size: clamp(10px, 1.2vw, 12px);
   font-weight: 700;
   font-family: var(--quai-font-display);
   text-decoration: none;
+  text-align: center;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-word;
   color: var(--quai-text);
   background: var(--donate-glass-bg);
   border: 1px solid rgba(220, 38, 38, 0.35);
@@ -420,10 +431,10 @@ body {
 }
 
 .panel--compact .quai-social__link {
-  min-height: clamp(28px, 3.5vh, 34px);
-  padding: clamp(5px, 0.9vh, 8px) clamp(10px, 1.8vw, 14px);
-  border-radius: clamp(8px, 1.2vw, 11px);
-  font-size: clamp(10px, 1.25vw, 13px);
+  min-height: clamp(24px, 3vh, 30px);
+  padding: clamp(3px, 0.65vh, 6px) clamp(5px, 1.3vw, 10px);
+  border-radius: clamp(6px, 1vw, 9px);
+  font-size: clamp(9px, 1.15vw, 12px);
 }
 
 .panel--compact .donate-row {
@@ -514,10 +525,16 @@ body {
 
   .panel--compact .quai-social {
     position: static;
+    left: auto;
+    right: auto;
     transform: none;
-    width: 100%;
-    justify-content: center;
-    margin: 0 0 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: clamp(4px, 1.2vw, 8px);
+    row-gap: 4px;
+    width: min(360px, 100%);
+    max-width: 100%;
+    margin: 0 auto 8px;
   }
 
   .panel--compact .donate-block {
@@ -550,6 +567,17 @@ body {
 
   .panel--compact .tap-btn {
     transform: translateY(-8px);
+  }
+
+  .panel--compact .quai-social {
+    width: min(100%, calc(100vw - 24px));
+  }
+
+  .panel--compact .quai-social__link {
+    padding-left: 4px;
+    padding-right: 4px;
+    min-height: 22px;
+    font-size: clamp(8px, 2.7vw, 11px);
   }
 }
 
