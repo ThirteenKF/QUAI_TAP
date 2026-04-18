@@ -1,0 +1,32 @@
+{
+  "name": "my-quai-tapalka",
+  "version": "1.0.0",
+  "description": "Tap game with Pelagus Wallet connection",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "compile": "hardhat compile && node scripts/copy-tap-artifact.cjs",
+    "deploy": "hardhat run scripts/deploy.cjs --network cyprus1",
+    "deploy:miners-room": "hardhat run scripts/deploy-miners-room-donate.cjs --network cyprus1",
+    "deploy:orchard": "hardhat run scripts/deploy.cjs --network orchard",
+    "deploy:cyprus1": "hardhat run scripts/deploy.cjs --network cyprus1",
+    "test:shim": "node scripts/test-quai-shim.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "quais": "^1.0.0-alpha.54",
+    "vite": "^8.0.8"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@quai/hardhat-deploy-metadata": "^1.0.8",
+    "@quai/quais-upgrades": "^3.8.14",
+    "dotenv": "^17.4.2",
+    "hardhat": "^2.28.0",
+    "pngjs": "^7.0.0"
+  }
+}

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>QUAITAP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="soapBackdrop" class="soap-backdrop" aria-hidden="true"></div>
+    <main class="app app--fill">
+      <section class="panel panel--compact" aria-label="QUAITAP">
+        <header class="panel-header">
+          <a class="corner-btn corner-left" href="/leaderboard.html">Leaderboard</a>
+          <div class="header-wallet">
+            <button id="connectBtn" class="corner-btn corner-right" type="button">
+              Wallet
+            </button>
+            <p id="walletStatus" class="wallet-status wallet-status-header">
+              Wallet not connected
+            </p>
+          </div>
+        </header>
+
+        <div class="panel-body">
+          <div class="panel-donate-wrap">
+            <div class="donate-block">
+              <div class="donate-row">
+                <input
+                  id="donateAmount"
+                  class="donate-input"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="0.0"
+                  autocomplete="off"
+                  aria-label="Amount in QUAI"
+                />
+                <span class="donate-unit">QUAI</span>
+              </div>
+              <button id="donateBtn" class="donate-btn" type="button" disabled>
+                Donate
+              </button>
+              <button
+                id="deployDonateBtn"
+                class="deploy-donate-btn"
+                type="button"
+                hidden
+                disabled
+              >
+                Deploy donate contract
+              </button>
+              <p id="donateStatus" class="donate-status"></p>
+            </div>
+          </div>
+
+          <div class="panel-body-scroll">
+          <div class="panel-meta-compact">
+            <h1 class="panel-title panel-title--quai-brand">
+              <span class="quai-brand__quai">QUAI</span><span class="quai-brand__tap">TAP</span>
+            </h1>
+            <p class="subtitle">10 taps = 1 ticket.</p>
+            <p id="ticketLine" class="ticket-line">Tickets: —</p>
+          </div>
+
+          <div class="panel-tap-zone">
+            <button
+              id="tapBtn"
+              class="tap-btn"
+              type="button"
+              aria-label="TAP"
+            >
+              <img
+                id="tapBtnArt"
+                class="tap-btn__art"
+                src="/images/tap-style-a.svg"
+                alt=""
+                width="200"
+                height="200"
+                decoding="async"
+                draggable="false"
+              />
+            </button>
+          </div>
+
+          <div class="panel-bottom">
+            <p id="txStatus" class="tx-status"></p>
+            <button
+              id="deployTestBtn"
+              class="deploy-test-btn"
+              type="button"
+              hidden
+              disabled
+            >
+              Start game
+            </button>
+          </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

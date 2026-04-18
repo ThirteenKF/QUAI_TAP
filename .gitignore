@@ -1,0 +1,12 @@
+node_modules/
+dist/
+cache/
+artifacts/
+
+# Секреты и приватные ключи (PRIVATE_KEY, CYPRUS1_PK и т.д. — только в локальных файлах)
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key

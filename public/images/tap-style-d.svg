@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <circle cx="100" cy="100" r="98" fill="#080808" />
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#dc2626" stroke-width="2" opacity="0.85" />
+  <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(220, 38, 38, 0.35)" stroke-width="1.5" />
+  <circle cx="100" cy="100" r="62" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5" />
+  <circle cx="100" cy="100" r="46" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.5" />
+  <circle cx="100" cy="100" r="28" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="100" cy="100" r="14" fill="#dc2626" />
+  <circle cx="100" cy="100" r="8" fill="#fef2f2" opacity="0.95" />
+  <text
+    x="100"
+    y="190"
+    text-anchor="middle"
+    fill="#ef4444"
+    font-family="Menlo, Consolas, monospace"
+    font-size="22"
+    font-weight="700"
+    letter-spacing="0.45em"
+  >
+    TAP
+  </text>
+</svg>
