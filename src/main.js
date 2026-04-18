@@ -23,6 +23,7 @@ import {
 } from "./lib/minersRoomDonateClient.js";
 import { syncLeaderboardFromWallet } from "./lib/leaderboardStore.js";
 import { initSoapBackdrop } from "./lib/soapBackdrop.js";
+import { startQuaiPriceTicker } from "./lib/quaiPrice.js";
 
 const STORAGE_KEY = "quai_tapalka_state_v1";
 
@@ -627,6 +628,7 @@ function tap() {
 }
 
 async function init() {
+  startQuaiPriceTicker(document.getElementById("quaiPrice"));
   initSoapBackdrop(document.getElementById("soapBackdrop"));
   loadState();
   if (tapBtnArt) {
