@@ -204,9 +204,52 @@ body {
   justify-content: center;
   min-height: 0;
   width: 100%;
-  padding: 16px 24px;
+  padding: 8px 24px 16px;
   position: relative;
   z-index: 1;
+}
+
+/** Промо под Tickets / над кнопкой TAP — в духе Quai */
+.tap-launch-line {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: min(34ch, 92vw);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 clamp(8px, 3vw, 16px);
+  font-family: var(--quai-font-display);
+  font-size: clamp(0.78rem, 2.1vw, 0.98rem);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: rgba(245, 245, 245, 0.94);
+}
+
+.tap-launch-line__lead {
+  color: #e22901;
+  font-weight: 700;
+  text-shadow: 0 0 36px rgba(226, 41, 1, 0.32);
+}
+
+.tap-launch-line__accent {
+  color: #f5f5f5;
+  font-weight: 700;
+}
+
+.tap-launch-line__qwant {
+  color: #e22901;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 40px rgba(226, 41, 1, 0.38);
+}
+
+.panel-meta-compact .tap-launch-line {
+  display: block;
+  margin-top: clamp(2px, 0.5vh, 6px);
+  margin-bottom: clamp(6px, 1vh, 12px);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .panel-bottom {
@@ -338,7 +381,7 @@ body {
 }
 
 .panel--compact .ticket-line {
-  margin: 0 0 clamp(4px, 0.8vh, 8px);
+  margin: 0 0 clamp(1px, 0.35vh, 4px);
   font-size: clamp(12px, 1.5vw, 19px);
 }
 
