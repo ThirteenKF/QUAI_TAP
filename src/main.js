@@ -24,6 +24,7 @@ import {
 import { syncLeaderboardFromWallet } from "./lib/leaderboardStore.js";
 import { initSoapBackdrop } from "./lib/soapBackdrop.js";
 import { startQuaiPriceTicker } from "./lib/quaiPrice.js";
+import { startNetworkHashrateTicker } from "./lib/networkHashrate.js";
 
 const STORAGE_KEY = "quai_tapalka_state_v1";
 
@@ -629,6 +630,7 @@ function tap() {
 
 async function init() {
   startQuaiPriceTicker(document.getElementById("quaiPrice"));
+  startNetworkHashrateTicker(document.getElementById("quaiHashrate"));
   initSoapBackdrop(document.getElementById("soapBackdrop"));
   loadState();
   if (tapBtnArt) {
