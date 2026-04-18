@@ -28,8 +28,10 @@ import { startNetworkHashrateTicker } from "./lib/networkHashrate.js";
 
 const STORAGE_KEY = "quai_tapalka_state_v1";
 
-const TAP_IMG_REVISION = "10";
-const TAP_BTN_ART_FILE = "tap-style-a.svg";
+const TAP_IMG_REVISION = "11";
+const TAP_BTN_ART_FILE = "tap-style-a-icon-only.svg";
+/** Интервал автоматического «переворота монетки» у картинки TAP (мс). */
+const TAP_COIN_FLIP_INTERVAL_MS = 5000;
 
 function tapButtonImageUrl(filename) {
   const base = import.meta.env.BASE_URL ?? "/";
@@ -40,6 +42,7 @@ function tapButtonImageUrl(filename) {
 const connectBtn = document.getElementById("connectBtn");
 const walletStatus = document.getElementById("walletStatus");
 const tapBtn = document.getElementById("tapBtn");
+const tapBtnArtWrap = document.getElementById("tapBtnArtWrap");
 const tapBtnArt = document.getElementById("tapBtnArt");
 const deployTestBtn = document.getElementById("deployTestBtn");
 const ticketLine = document.getElementById("ticketLine");
@@ -60,6 +63,16 @@ let donateInFlight = false;
 
 /** Один раз за сессию страницы — иначе дублируются accountsChanged. */
 let walletEventsBound = false;
+
+let tapCoinFlipIntervalId = null;
+let tapCoinFlipEndTimer = null;
+
+function clearTapCoinFlipEndTimer() {
+  if (tapCoinFlipEndTimer != null) {
+    window.clearTimeout(tapCoinFlipEndTimer);
+    tapCoinFlipEndTimer = null;
+  }
+}
 
 function sanitizeSessionCount() {
   if (typeof count !== "number" || !Number.isFinite(count) || count < 0) {
@@ -606,6 +619,48 @@ async function maybeCommitTenTaps() {
   }
 }
 
+function stopTapCoinFlipInterval() {
+  if (tapCoinFlipIntervalId != null) {
+    window.clearInterval(tapCoinFlipIntervalId);
+    tapCoinFlipIntervalId = null;
+  }
+}
+
+function triggerTapCoinFlip() {
+  if (!tapBtn || !tapBtnArtWrap || document.hidden) {
+    return;
+  }
+  clearTapCoinFlipEndTimer();
+  tapBtn.classList.remove("tap-btn--coin-flip");
+  void tapBtn.offsetWidth;
+  tapBtn.classList.add("tap-btn--coin-flip");
+  tapCoinFlipEndTimer = window.setTimeout(() => {
+    tapCoinFlipEndTimer = null;
+    tapBtn?.classList.remove("tap-btn--coin-flip");
+  }, 700);
+}
+
+function startTapCoinFlipInterval() {
+  if (!tapBtn || !tapBtnArtWrap) {
+    return;
+  }
+  stopTapCoinFlipInterval();
+  tapCoinFlipIntervalId = window.setInterval(
+    triggerTapCoinFlip,
+    TAP_COIN_FLIP_INTERVAL_MS,
+  );
+}
+
+function pauseTapAnimationsForHover() {
+  stopTapCoinFlipInterval();
+  clearTapCoinFlipEndTimer();
+  tapBtn?.classList.remove("tap-btn--coin-flip");
+}
+
+function resumeTapAnimationsAfterHover() {
+  startTapCoinFlipInterval();
+}
+
 function tap() {
   if (deployInFlight || donateInFlight || deployDonateInFlight) {
     return;
@@ -659,6 +714,20 @@ async function init() {
   }
 
   connectBtn?.addEventListener("click", connectWallet);
+  tapBtn?.addEventListener("animationend", (e) => {
+    if (e.target !== tapBtnArtWrap) {
+      return;
+    }
+    const name = String(e.animationName || "");
+    if (name !== "tap-btn-coin-flip" && !name.includes("tap-btn-coin-flip")) {
+      return;
+    }
+    clearTapCoinFlipEndTimer();
+    tapBtn.classList.remove("tap-btn--coin-flip");
+  });
+  startTapCoinFlipInterval();
+  tapBtn?.addEventListener("pointerenter", pauseTapAnimationsForHover);
+  tapBtn?.addEventListener("pointerleave", resumeTapAnimationsAfterHover);
   tapBtn?.addEventListener("click", tap);
   deployTestBtn?.addEventListener("click", deployContractFromWallet);
   donateBtn?.addEventListener("click", onDonateMinersRoom);

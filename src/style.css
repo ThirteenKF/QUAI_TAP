@@ -490,7 +490,7 @@ body {
   transform: translateY(clamp(-20px, -2.8vh, -10px));
 }
 
-.panel--compact .tap-btn__art {
+.panel--compact .tap-btn__art-wrap {
   --tap-sz: min(max(150px, min(42vw, 240px)), 72vw, max(120px, 100vw - 48px));
   width: var(--tap-sz);
   height: var(--tap-sz);
@@ -547,7 +547,7 @@ body {
     max-width: min(96vw, 600px);
   }
 
-  .panel--compact .tap-btn__art {
+  .panel--compact .tap-btn__art-wrap {
     --tap-sz: min(max(150px, min(42vw, 260px)), 78vw, max(120px, 100vw - 40px));
     max-width: 260px;
     max-height: 260px;
@@ -672,6 +672,59 @@ button {
     border-color 0.1s ease;
 }
 
+/**
+ * «Солнечная» пульсация на ::after — раз в 3 с короткая вспышка (корона + всплеск),
+ * без transform на самой кнопке (hover / layout).
+ */
+@keyframes tap-btn-sun-pulse {
+  0%,
+  72% {
+    transform: scale(1);
+    box-shadow:
+      0 0 16px rgba(255, 210, 120, 0.2),
+      0 0 34px rgba(220, 38, 38, 0.24),
+      0 0 0 rgba(255, 248, 200, 0);
+  }
+  84% {
+    transform: scale(1.055);
+    box-shadow:
+      0 0 48px rgba(255, 236, 160, 0.72),
+      0 0 76px rgba(255, 190, 80, 0.48),
+      0 0 108px rgba(226, 41, 1, 0.28);
+  }
+  96%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 16px rgba(255, 210, 120, 0.18),
+      0 0 32px rgba(220, 38, 38, 0.22),
+      0 0 0 rgba(255, 248, 200, 0);
+  }
+}
+
+.tap-btn:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 1;
+  transform-origin: 50% 50%;
+  animation: tap-btn-sun-pulse 3s ease-in-out infinite;
+}
+
+.tap-btn:hover:not(:disabled)::after {
+  animation: none;
+  box-shadow: none;
+  opacity: 0;
+  transform: none;
+}
+
+.tap-btn:disabled::after {
+  content: none;
+}
+
 /** Яркое кольцо при :active — сразу видно, что тап зарегистрирован */
 .tap-btn::before {
   content: "";
@@ -694,11 +747,35 @@ button {
   outline-offset: 4px;
 }
 
-.tap-btn__art {
+/** Надпись TAP — вне крутящейся обёртки (значок крутится отдельно) */
+.tap-btn__label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(4px, 2vmin, 14px);
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  font-family: Menlo, Consolas, ui-monospace, monospace;
+  font-weight: 700;
+  font-size: clamp(11px, 2.9vmin, 20px);
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  color: #ef4444;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/** Обёртка: transform/animation на <img> часто не работают — крутим span */
+.tap-btn__art-wrap {
   position: relative;
   z-index: 1;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
+  flex-shrink: 0;
   --tap-sz: min(88vw, 100vw - 32px, 280px);
   width: var(--tap-sz);
   height: var(--tap-sz);
@@ -706,26 +783,62 @@ button {
   min-height: 148px;
   max-width: 280px;
   max-height: 280px;
-  vertical-align: middle;
   border-radius: 50%;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+}
+
+.tap-btn__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   object-fit: contain;
+  border-radius: 50%;
   pointer-events: none;
   user-select: none;
+  transform-origin: 50% 50%;
   transition:
     transform 0.16s cubic-bezier(0.34, 1.35, 0.64, 1),
-    filter 0.12s ease,
-    box-shadow 0.16s ease;
+    filter 0.12s ease;
+}
+
+/** Плоский поворот (rotate) — стабильнее, чем rotateY на <img>; не конфликтует с 3D-сглаживанием */
+@keyframes tap-btn-coin-flip {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  35% {
+    transform: scale(0.9) rotate(200deg);
+  }
+  70% {
+    transform: scale(0.88) rotate(320deg);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+.tap-btn.tap-btn--coin-flip .tap-btn__art-wrap {
+  animation: tap-btn-coin-flip 0.62s cubic-bezier(0.33, 0.08, 0.24, 1) forwards;
+  transition: none;
+}
+
+/** Наведение: все анимации/переходы TAP off (свечение — ::after ниже; таймер монетки — в JS) */
+.tap-btn:hover:not(:disabled) {
+  transition: none;
+  border-color: #0a0a0a;
+}
+
+.tap-btn:hover:not(:disabled) .tap-btn__art-wrap {
+  animation: none !important;
+  transition: none !important;
 }
 
 .tap-btn:hover:not(:disabled) .tap-btn__art {
-  transform: scale(1.02);
-  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.58))
-    drop-shadow(0 0 0 1px rgba(220, 38, 38, 0.25))
-    drop-shadow(0 0 28px rgba(220, 38, 38, 0.38));
-}
-
-.tap-btn:hover:not(:disabled) {
-  border-color: #0a0a0a;
+  transform: none;
+  filter: none;
+  transition: none;
 }
 
 .tap-btn:active:not(:disabled) {
@@ -759,9 +872,16 @@ button {
   cursor: not-allowed;
 }
 
-.tap-btn:disabled .tap-btn__art {
+.tap-btn:disabled:not(.tap-btn--coin-flip) .tap-btn__art {
   transform: none;
   filter: grayscale(0.35) brightness(0.82) contrast(0.95);
+}
+
+/** После hover/active: сброс img на время монетки (в т.ч. «липкий» :hover) */
+.tap-btn.tap-btn--coin-flip .tap-btn__art {
+  transform: none !important;
+  filter: none !important;
+  transition: none;
 }
 
 .deploy-test-btn {
@@ -924,6 +1044,17 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tap-btn:not(:disabled)::after {
+    animation: none;
+    box-shadow: none;
+    opacity: 0;
+    transform: none;
+  }
+
+  .tap-btn__art-wrap {
+    transition: none;
+  }
+
   .tap-btn__art {
     transition: none;
   }
@@ -935,6 +1066,7 @@ button {
   .tap-btn:hover:not(:disabled) .tap-btn__art,
   .tap-btn:active:not(:disabled) .tap-btn__art {
     transform: none;
+    filter: none;
   }
 
   .tap-btn:active:not(:disabled) {
