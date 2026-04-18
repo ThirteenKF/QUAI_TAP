@@ -316,11 +316,11 @@ body {
 
 .panel--compact .donate-block {
   margin: 0;
-  padding: clamp(8px, 1.6vh, 14px) clamp(10px, 1.8vw, 16px);
-  width: min(36vw, 320px);
+  padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.4vw, 12px);
+  width: min(32vw, 260px);
   max-width: 92vw;
-  min-width: 200px;
-  border-radius: clamp(10px, 1.8vw, 16px);
+  min-width: 156px;
+  border-radius: clamp(8px, 1.4vw, 12px);
   background: var(--donate-glass-bg);
   backdrop-filter: blur(var(--donate-glass-blur)) saturate(1.15);
   -webkit-backdrop-filter: blur(var(--donate-glass-blur)) saturate(1.15);
@@ -332,40 +332,40 @@ body {
 }
 
 .panel--compact .donate-row {
-  gap: clamp(5px, 0.9vw, 8px);
+  gap: clamp(4px, 0.7vw, 6px);
 }
 
 .panel--compact .donate-input {
-  max-width: min(16vw, 160px);
-  min-width: 90px;
-  padding: clamp(5px, 0.9vh, 8px) clamp(8px, 1vw, 12px);
-  border-radius: clamp(8px, 1.2vw, 12px);
-  font-size: clamp(14px, 2vw, 22px);
+  max-width: min(14vw, 132px);
+  min-width: 72px;
+  padding: clamp(4px, 0.75vh, 6px) clamp(6px, 0.9vw, 10px);
+  border-radius: clamp(6px, 1vw, 10px);
+  font-size: clamp(12px, 1.65vw, 17px);
 }
 
 .panel--compact .donate-unit {
-  font-size: clamp(12px, 1.4vw, 18px);
+  font-size: clamp(10px, 1.15vw, 14px);
 }
 
 .panel--compact .donate-btn {
-  margin-top: clamp(6px, 1vh, 10px);
-  padding: clamp(6px, 1vh, 10px) clamp(8px, 1.2vw, 14px);
-  border-radius: clamp(9px, 1.4vw, 14px);
-  font-size: clamp(11px, 1.3vw, 17px);
+  margin-top: clamp(4px, 0.75vh, 7px);
+  padding: clamp(5px, 0.75vh, 7px) clamp(6px, 1vw, 10px);
+  border-radius: clamp(7px, 1.1vw, 11px);
+  font-size: clamp(10px, 1.15vw, 14px);
   line-height: 1.2;
   white-space: normal;
 }
 
 .panel--compact .deploy-donate-btn {
-  margin-top: clamp(5px, 0.8vh, 8px);
-  padding: clamp(5px, 0.8vh, 8px) clamp(7px, 1vw, 12px);
-  font-size: clamp(10px, 1.1vw, 14px);
-  border-radius: clamp(8px, 1.2vw, 12px);
+  margin-top: clamp(4px, 0.6vh, 6px);
+  padding: clamp(4px, 0.65vh, 6px) clamp(6px, 0.85vw, 10px);
+  font-size: clamp(9px, 1vw, 12px);
+  border-radius: clamp(6px, 1vw, 10px);
 }
 
 .panel--compact .donate-status {
-  margin: clamp(6px, 1vh, 10px) 0 0;
-  font-size: clamp(10px, 1.05vw, 14px);
+  margin: clamp(4px, 0.75vh, 7px) 0 0;
+  font-size: clamp(9px, 0.95vw, 12px);
 }
 
 .panel--compact .panel-title {
@@ -425,7 +425,7 @@ body {
   }
 
   .panel--compact .donate-block {
-    width: min(92vw, 360px);
+    width: min(88vw, 300px);
     min-width: 0;
   }
 
