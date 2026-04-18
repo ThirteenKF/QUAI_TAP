@@ -44,7 +44,6 @@ const ticketLine = document.getElementById("ticketLine");
 const txStatus = document.getElementById("txStatus");
 const donateAmountInput = document.getElementById("donateAmount");
 const donateBtn = document.getElementById("donateBtn");
-const deployDonateBtn = document.getElementById("deployDonateBtn");
 const donateStatus = document.getElementById("donateStatus");
 
 let count = 0;
@@ -233,19 +232,9 @@ function updateUI() {
       deployInFlight || deployDonateInFlight || donateInFlight;
   }
 
-  const donateContractAddr = getMinersRoomDonateAddress();
-  if (deployDonateBtn) {
-    deployDonateBtn.hidden = !account || Boolean(donateContractAddr);
-    deployDonateBtn.disabled =
-      deployDonateInFlight ||
-      deployInFlight ||
-      donateInFlight ||
-      commitInFlight;
-  }
   if (donateBtn) {
     donateBtn.disabled =
       !account ||
-      !donateContractAddr ||
       donateInFlight ||
       deployDonateInFlight ||
       deployInFlight ||
@@ -408,62 +397,21 @@ async function deployContractFromWallet() {
   }
 }
 
-async function deployMinersRoomDonateFromWallet() {
-  if (
-    deployDonateInFlight ||
-    deployInFlight ||
-    donateInFlight ||
-    commitInFlight ||
-    !account
-  ) {
-    return;
+/** Deploys Miners Room donate contract if there is no address yet. */
+async function ensureMinersRoomDonateContract(provider) {
+  const existing = getMinersRoomDonateAddress();
+  if (existing) {
+    return existing;
   }
-  if (getMinersRoomDonateAddress()) {
-    return;
-  }
-
-  const provider = getWallet();
-  if (!provider) {
-    if (donateStatus) {
-      donateStatus.textContent = "Wallet not found";
-    }
-    return;
-  }
-
-  deployDonateInFlight = true;
-  if (donateStatus) {
-    donateStatus.textContent = "Wait… deploy donation contract in wallet";
-  }
-  updateUI();
-
+  await ensureActiveQuaiChain(provider);
+  const addr = await deployMinersRoomDonate(provider);
+  setMinersRoomDonateAddress(addr);
   try {
-    await ensureActiveQuaiChain(provider);
-    const addr = await deployMinersRoomDonate(provider);
-    setMinersRoomDonateAddress(addr);
-
-    try {
-      await navigator.clipboard.writeText(addr);
-    } catch {
-      // ignore
-    }
-
-    if (donateStatus) {
-      donateStatus.textContent = "Donate contract ready — enter an amount and tap Donate.";
-    }
-  } catch (error) {
-    const detail =
-      error?.shortMessage ||
-      error?.reason ||
-      error?.message ||
-      String(error);
-    if (donateStatus) {
-      donateStatus.textContent =
-        detail.length > 140 ? `${detail.slice(0, 137)}…` : detail;
-    }
-  } finally {
-    deployDonateInFlight = false;
-    updateUI();
+    await navigator.clipboard.writeText(addr);
+  } catch {
+    // ignore
   }
+  return addr;
 }
 
 async function onDonateMinersRoom() {
@@ -477,26 +425,49 @@ async function onDonateMinersRoom() {
     return;
   }
 
-  const contractAddr = getMinersRoomDonateAddress();
-  if (!contractAddr) {
+  const provider = getWallet();
+  if (!provider) {
     if (donateStatus) {
-      donateStatus.textContent = "Deploy the donate contract first or set the address in .env";
+      donateStatus.textContent = "Wallet not found";
     }
     return;
+  }
+
+  let contractAddr = getMinersRoomDonateAddress();
+  let justDeployed = false;
+
+  if (!contractAddr) {
+    deployDonateInFlight = true;
+    if (donateStatus) {
+      donateStatus.textContent = "Wait… deploy donation contract in wallet";
+    }
+    updateUI();
+    try {
+      contractAddr = await ensureMinersRoomDonateContract(provider);
+      justDeployed = true;
+    } catch (error) {
+      const detail =
+        error?.shortMessage ||
+        error?.reason ||
+        error?.message ||
+        String(error);
+      if (donateStatus) {
+        donateStatus.textContent =
+          detail.length > 140 ? `${detail.slice(0, 137)}…` : detail;
+      }
+      return;
+    } finally {
+      deployDonateInFlight = false;
+      updateUI();
+    }
   }
 
   const raw = donateAmountInput?.value?.trim() ?? "";
   if (!raw) {
     if (donateStatus) {
-      donateStatus.textContent = "Enter an amount in QUAI";
-    }
-    return;
-  }
-
-  const provider = getWallet();
-  if (!provider) {
-    if (donateStatus) {
-      donateStatus.textContent = "Wallet not found";
+      donateStatus.textContent = justDeployed
+        ? "Donate contract ready — enter an amount and tap Donate."
+        : "Enter an amount in QUAI";
     }
     return;
   }
@@ -510,7 +481,8 @@ async function onDonateMinersRoom() {
   try {
     await ensureActiveQuaiChain(provider);
     await provider.request({ method: "eth_requestAccounts" });
-    await sendMinersRoomDonate(provider, contractAddr, raw);
+    const toAddr = getMinersRoomDonateAddress() ?? contractAddr;
+    await sendMinersRoomDonate(provider, toAddr, raw);
     if (donateStatus) {
       donateStatus.textContent = "Thanks! Transfer sent.";
     }
@@ -686,7 +658,6 @@ async function init() {
   tapBtn?.addEventListener("click", tap);
   deployTestBtn?.addEventListener("click", deployContractFromWallet);
   donateBtn?.addEventListener("click", onDonateMinersRoom);
-  deployDonateBtn?.addEventListener("click", deployMinersRoomDonateFromWallet);
 }
 
 init();

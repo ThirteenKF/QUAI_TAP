@@ -356,13 +356,6 @@ body {
   white-space: normal;
 }
 
-.panel--compact .deploy-donate-btn {
-  margin-top: clamp(4px, 0.6vh, 6px);
-  padding: clamp(4px, 0.65vh, 6px) clamp(6px, 0.85vw, 10px);
-  font-size: clamp(9px, 1vw, 12px);
-  border-radius: clamp(6px, 1vw, 10px);
-}
-
 .panel--compact .donate-status {
   margin: clamp(4px, 0.75vh, 7px) 0 0;
   font-size: clamp(9px, 0.95vw, 12px);
@@ -788,23 +781,6 @@ button {
   opacity: 0.45;
   cursor: not-allowed;
   filter: grayscale(0.25);
-}
-
-.deploy-donate-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: clamp(8px, 2vw, 12px);
-  border-radius: 10px;
-  background: #262626;
-  color: var(--quai-text);
-  font-size: clamp(0.75rem, 2vw, 0.85rem);
-  font-weight: 600;
-  border: 1px solid var(--quai-border);
-}
-
-.deploy-donate-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .donate-status {
