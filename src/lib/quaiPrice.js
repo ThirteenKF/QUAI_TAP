@@ -33,6 +33,23 @@ export function startQuaiPriceTicker(el) {
 
   let timer = null;
 
+  function setTrendClass(changePct) {
+    el.classList.remove("quai-price--up", "quai-price--down", "quai-price--flat");
+    if (typeof changePct !== "number" || !Number.isFinite(changePct)) {
+      el.classList.add("quai-price--flat");
+      return;
+    }
+    if (changePct > 0) {
+      el.classList.add("quai-price--up");
+      return;
+    }
+    if (changePct < 0) {
+      el.classList.add("quai-price--down");
+      return;
+    }
+    el.classList.add("quai-price--flat");
+  }
+
   async function tick() {
     try {
       const url = new URL("https://api.coingecko.com/api/v3/simple/price");
@@ -61,14 +78,17 @@ export function startQuaiPriceTicker(el) {
         line += ` (${sign}${ch.toFixed(1)}% 24h)`;
       }
       el.textContent = line;
+      setTrendClass(ch);
       el.removeAttribute("title");
     } catch {
       el.textContent = "QUAI price — unavailable";
+      setTrendClass(undefined);
       el.title = "Could not load price (CoinGecko)";
     }
   }
 
   el.textContent = "QUAI — …";
+  setTrendClass(undefined);
   void tick();
   timer = window.setInterval(tick, POLL_MS);
 

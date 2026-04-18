@@ -162,6 +162,18 @@ body {
   text-overflow: ellipsis;
 }
 
+.quai-price--up {
+  color: #22c55e;
+}
+
+.quai-price--down {
+  color: #ef4444;
+}
+
+.quai-price--flat {
+  color: rgba(250, 250, 250, 0.78);
+}
+
 .panel-body {
   flex: 1;
   min-height: 0;
