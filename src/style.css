@@ -122,6 +122,14 @@ body {
   border-bottom: 1px solid var(--quai-border);
 }
 
+.panel-header-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.4vw, 10px);
+  min-width: 0;
+}
+
 .header-wallet {
   display: flex;
   flex-direction: column;
