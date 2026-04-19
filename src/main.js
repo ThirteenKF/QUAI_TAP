@@ -644,22 +644,20 @@ async function loadChatMessages() {
       chatStatus.textContent = "";
     }
   } catch (error) {
-    if (isZoneError(error)) {
-      const fallback = loadFallbackChatMessages();
-      chatMessagesCache = fallback.map((m) => ({
-        author: String(m.author || ""),
-        timestamp: BigInt(m.timestamp || 0),
-        text: String(m.text || ""),
-      }));
-      renderChatMessages();
-      if (chatStatus) {
-        chatStatus.textContent = "Chat fallback mode (zone mismatch).";
-      }
-      return;
-    }
+    const fallback = loadFallbackChatMessages();
+    chatMessagesCache = fallback.map((m) => ({
+      author: String(m.author || ""),
+      timestamp: BigInt(m.timestamp || 0),
+      text: String(m.text || ""),
+    }));
+    renderChatMessages();
     if (chatStatus) {
-      const msg = error?.message || "Chat fetch error";
-      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
+      const msg = error?.shortMessage || error?.message || "Chat fetch error";
+      const suffix = isZoneError(error)
+        ? "Fallback mode (zone mismatch)."
+        : "Fallback mode (network error).";
+      chatStatus.textContent =
+        `${suffix} ${msg.length > 100 ? `${msg.slice(0, 97)}…` : msg}`;
     }
   }
 }
@@ -712,21 +710,19 @@ async function onSendChatMessage() {
     }
     await loadChatMessages();
   } catch (error) {
-    if (isZoneError(error)) {
-      appendFallbackChatMessage(text);
-      if (chatInput) {
-        chatInput.value = "";
-      }
-      if (chatStatus) {
-        chatStatus.textContent = "Message sent (fallback mode: zone mismatch).";
-      }
-      await loadChatMessages();
-      return;
+    appendFallbackChatMessage(text);
+    if (chatInput) {
+      chatInput.value = "";
     }
     if (chatStatus) {
       const msg = error?.shortMessage || error?.message || "Send failed";
-      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
+      const suffix = isZoneError(error)
+        ? "Message sent (fallback mode: zone mismatch)."
+        : "Message sent (fallback mode: network error).";
+      chatStatus.textContent =
+        `${suffix} ${msg.length > 100 ? `${msg.slice(0, 97)}…` : msg}`;
     }
+    await loadChatMessages();
   } finally {
     chatSendInFlight = false;
     updateUI();
