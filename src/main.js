@@ -213,6 +213,11 @@ function needsOnchainBatchCommit() {
   }
 }
 
+function donateInputHasAmount() {
+  const raw = donateAmountInput?.value?.trim() ?? "";
+  return raw.length > 0;
+}
+
 function updateUI() {
   if (tapBtn) {
     tapBtn.disabled =
@@ -250,6 +255,7 @@ function updateUI() {
   if (donateBtn) {
     donateBtn.disabled =
       !account ||
+      !donateInputHasAmount() ||
       donateInFlight ||
       deployDonateInFlight ||
       deployInFlight ||
@@ -498,6 +504,9 @@ async function onDonateMinersRoom() {
     await provider.request({ method: "eth_requestAccounts" });
     const toAddr = getMinersRoomDonateAddress() ?? contractAddr;
     await sendMinersRoomDonate(provider, toAddr, raw);
+    if (donateAmountInput) {
+      donateAmountInput.value = "";
+    }
     if (donateStatus) {
       donateStatus.textContent = "Thanks! Transfer sent.";
     }
@@ -731,6 +740,9 @@ async function init() {
   tapBtn?.addEventListener("click", tap);
   deployTestBtn?.addEventListener("click", deployContractFromWallet);
   donateBtn?.addEventListener("click", onDonateMinersRoom);
+  donateAmountInput?.addEventListener("input", () => {
+    updateUI();
+  });
 }
 
 init();
