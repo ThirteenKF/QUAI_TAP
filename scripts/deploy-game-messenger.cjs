@@ -34,8 +34,8 @@ async function main() {
   console.log("Sending deployment transaction...");
   const c = await withTimeout(
     factory.deploy({ gasLimit: 6_000_000n }),
-    120_000,
-    "Deploy transaction was not created in 120s. Check RPC and wallet key balance.",
+    900_000,
+    "Deploy transaction was not created in 900s. Check RPC and wallet key balance.",
   );
   const deployTx = c.deploymentTransaction();
   if (deployTx?.hash) {

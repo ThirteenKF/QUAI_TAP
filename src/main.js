@@ -83,6 +83,7 @@ let chatMessagesCache = [];
 let isChatCollapsed = false;
 
 const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
+const CHAT_FALLBACK_KEY = "quai_chat_fallback_v1";
 
 /** Один раз за сессию страницы — иначе дублируются accountsChanged. */
 let walletEventsBound = false;
@@ -287,6 +288,55 @@ function renderChatMessages() {
     item.querySelector(".chat-message__text").textContent = msg.text || "";
     chatMessages.append(item);
   }
+}
+
+function chatStorageRoom() {
+  return activeChatRoom === "room" && account ? `room:${account.toLowerCase()}` : "global";
+}
+
+function loadFallbackChatMessages() {
+  try {
+    const raw = localStorage.getItem(CHAT_FALLBACK_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    const room = chatStorageRoom();
+    return parsed.filter((x) => x && x.room === room).slice(-20);
+  } catch {
+    return [];
+  }
+}
+
+function appendFallbackChatMessage(text) {
+  const item = {
+    room: chatStorageRoom(),
+    author: account || "guest",
+    timestamp: BigInt(Math.floor(Date.now() / 1000)).toString(),
+    text: String(text || "").trim(),
+  };
+  try {
+    const raw = localStorage.getItem(CHAT_FALLBACK_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const next = Array.isArray(parsed) ? parsed : [];
+    next.push(item);
+    localStorage.setItem(CHAT_FALLBACK_KEY, JSON.stringify(next.slice(-400)));
+  } catch {
+    // ignore
+  }
+}
+
+function isZoneError(error) {
+  const msg = String(error?.message || "");
+  return (
+    msg.includes("Invalid zone") ||
+    msg.includes("invalid zone") ||
+    msg.includes("Address belongs to other zone") ||
+    msg.includes("expected Quai address")
+  );
 }
 
 function loadChatUiPrefs() {
@@ -563,9 +613,15 @@ async function loadChatMessages() {
   const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
     chatMessagesCache = [];
+    const fallback = loadFallbackChatMessages();
+    chatMessagesCache = fallback.map((m) => ({
+      author: String(m.author || ""),
+      timestamp: BigInt(m.timestamp || 0),
+      text: String(m.text || ""),
+    }));
     renderChatMessages();
     if (chatStatus) {
-      chatStatus.textContent = "Set VITE_GAME_MESSENGER_ADDRESS for shared Global chat.";
+      chatStatus.textContent = "Chat fallback mode (no shared contract configured).";
     }
     return;
   }
@@ -588,6 +644,19 @@ async function loadChatMessages() {
       chatStatus.textContent = "";
     }
   } catch (error) {
+    if (isZoneError(error)) {
+      const fallback = loadFallbackChatMessages();
+      chatMessagesCache = fallback.map((m) => ({
+        author: String(m.author || ""),
+        timestamp: BigInt(m.timestamp || 0),
+        text: String(m.text || ""),
+      }));
+      renderChatMessages();
+      if (chatStatus) {
+        chatStatus.textContent = "Chat fallback mode (zone mismatch).";
+      }
+      return;
+    }
     if (chatStatus) {
       const msg = error?.message || "Chat fetch error";
       chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
@@ -615,9 +684,14 @@ async function onSendChatMessage() {
 
   const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
-    if (chatStatus) {
-      chatStatus.textContent = "Shared chat contract is not configured.";
+    appendFallbackChatMessage(text);
+    if (chatInput) {
+      chatInput.value = "";
     }
+    if (chatStatus) {
+      chatStatus.textContent = "Message sent (fallback mode).";
+    }
+    await loadChatMessages();
     return;
   }
 
@@ -638,6 +712,17 @@ async function onSendChatMessage() {
     }
     await loadChatMessages();
   } catch (error) {
+    if (isZoneError(error)) {
+      appendFallbackChatMessage(text);
+      if (chatInput) {
+        chatInput.value = "";
+      }
+      if (chatStatus) {
+        chatStatus.textContent = "Message sent (fallback mode: zone mismatch).";
+      }
+      await loadChatMessages();
+      return;
+    }
     if (chatStatus) {
       const msg = error?.shortMessage || error?.message || "Send failed";
       chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
