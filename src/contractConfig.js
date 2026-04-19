@@ -8,6 +8,8 @@ const LOCAL_MINERS_DONATE_KEY = "quai_miners_room_donate_address";
 const IGNORE_VITE_MINERS_DONATE_KEY = "quai_miners_room_donate_ignore_vite";
 const LOCAL_GAME_MESSENGER_KEY = "quai_game_messenger_address";
 const IGNORE_VITE_GAME_MESSENGER_KEY = "quai_game_messenger_ignore_vite";
+const DEFAULT_GAME_MESSENGER_ADDRESS =
+  "0xa64284C99231531A9cFDB7EB7Eb0C65e921A7991";
 
 const chain = getActiveChain();
 
@@ -126,7 +128,7 @@ export function getGameMessengerAddress() {
   } catch {
     // ignore
   }
-  return "";
+  return DEFAULT_GAME_MESSENGER_ADDRESS;
 }
 
 export function setGameMessengerAddress(address) {
