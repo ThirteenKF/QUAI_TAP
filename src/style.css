@@ -610,6 +610,26 @@ button {
   background: var(--quai-surface-2);
   color: var(--quai-text);
   border: 1px solid var(--quai-border);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+a.corner-btn.corner-left:hover,
+a.corner-btn.corner-left:focus-visible {
+  background: linear-gradient(
+    145deg,
+    rgba(239, 68, 68, 0.22) 0%,
+    rgba(220, 38, 38, 0.32) 55%,
+    rgba(153, 27, 27, 0.28) 100%
+  );
+  border-color: var(--quai-red-bright);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.45),
+    0 0 22px rgba(226, 41, 1, 0.35);
 }
 
 .corner-right {

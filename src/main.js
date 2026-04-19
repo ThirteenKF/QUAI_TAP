@@ -224,7 +224,7 @@ function updateUI() {
 
   if (!account) {
     walletStatus.textContent = "Wallet not connected";
-    connectBtn.textContent = "Wallet";
+    connectBtn.textContent = "Connect Wallet";
   } else {
     walletStatus.textContent = shortenAddress(account);
     connectBtn.textContent = "Disconnect";
