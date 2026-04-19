@@ -9,6 +9,7 @@
     "compile": "hardhat compile && node scripts/copy-tap-artifact.cjs",
     "deploy": "hardhat run scripts/deploy.cjs --network cyprus1",
     "deploy:miners-room": "hardhat run scripts/deploy-miners-room-donate.cjs --network cyprus1",
+    "deploy:messenger": "hardhat run scripts/deploy-game-messenger.cjs --network cyprus1",
     "deploy:orchard": "hardhat run scripts/deploy.cjs --network orchard",
     "deploy:cyprus1": "hardhat run scripts/deploy.cjs --network cyprus1",
     "test:shim": "node scripts/test-quai-shim.mjs"

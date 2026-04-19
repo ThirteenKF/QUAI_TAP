@@ -100,9 +100,17 @@ export function setMinersRoomDonateAddress(address) {
 }
 
 /**
- * Контракт on-chain мессенджера: localStorage -> иначе VITE_GAME_MESSENGER_ADDRESS.
+ * Контракт on-chain мессенджера: общий адрес из env имеет приоритет,
+ * чтобы все пользователи читали/писали один и тот же Global чат.
  */
 export function getGameMessengerAddress() {
+  const fromEnv =
+    import.meta.env.VITE_GAME_MESSENGGER_ADDRESS?.trim() ||
+    import.meta.env.VITE_GAME_MESSENGER_ADDRESS?.trim() ||
+    "";
+  if (fromEnv) {
+    return fromEnv;
+  }
   try {
     const fromStorage = localStorage.getItem(LOCAL_GAME_MESSENGER_KEY)?.trim();
     if (fromStorage) {
@@ -118,9 +126,7 @@ export function getGameMessengerAddress() {
   } catch {
     // ignore
   }
-  return import.meta.env.VITE_GAME_MESSENGGER_ADDRESS?.trim()
-    || import.meta.env.VITE_GAME_MESSENGER_ADDRESS?.trim()
-    || "";
+  return "";
 }
 
 export function setGameMessengerAddress(address) {

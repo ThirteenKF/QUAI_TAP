@@ -6,7 +6,6 @@ import {
   getMinersRoomDonateAddress,
   setMinersRoomDonateAddress,
   getGameMessengerAddress,
-  setGameMessengerAddress,
 } from "./contractConfig.js";
 import {
   getPelagusEip1193,
@@ -25,7 +24,6 @@ import {
 } from "./lib/minersRoomDonateClient.js";
 import {
   GAME_MESSENGER_GLOBAL_ROOM,
-  deployGameMessenger,
   postMessage,
   readRecentMessages,
   walletRoomKey,
@@ -78,7 +76,6 @@ let commitInFlight = false;
 let deployInFlight = false;
 let deployDonateInFlight = false;
 let donateInFlight = false;
-let deployMessengerInFlight = false;
 let chatSendInFlight = false;
 let chatPollTimerId = null;
 let activeChatRoom = "global";
@@ -356,7 +353,7 @@ function updateUI() {
   if (chatContractHint) {
     chatContractHint.textContent = messengerAddr
       ? `Contract: ${shortenAddress(messengerAddr)}`
-      : "Contract: will deploy on first message";
+      : "Contract: set VITE_GAME_MESSENGER_ADDRESS";
   }
 
   if (chatTabGlobal && chatTabRoom) {
@@ -373,7 +370,6 @@ function updateUI() {
       donateInFlight ||
       deployDonateInFlight ||
       commitInFlight ||
-      deployMessengerInFlight ||
       chatSendInFlight;
   }
 
@@ -563,24 +559,13 @@ async function ensureMinersRoomDonateContract(provider) {
   return addr;
 }
 
-async function ensureGameMessengerContract(provider) {
-  const existing = getGameMessengerAddress();
-  if (existing) {
-    return existing;
-  }
-  await ensureActiveQuaiChain(provider);
-  const addr = await deployGameMessenger(provider);
-  setGameMessengerAddress(addr);
-  return addr;
-}
-
 async function loadChatMessages() {
   const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
     chatMessagesCache = [];
     renderChatMessages();
     if (chatStatus) {
-      chatStatus.textContent = "Send first message to deploy chat contract.";
+      chatStatus.textContent = "Set VITE_GAME_MESSENGER_ADDRESS for shared Global chat.";
     }
     return;
   }
@@ -599,7 +584,7 @@ async function loadChatMessages() {
       text: String(m.text ?? ""),
     }));
     renderChatMessages();
-    if (chatStatus && !chatSendInFlight && !deployMessengerInFlight) {
+    if (chatStatus && !chatSendInFlight) {
       chatStatus.textContent = "";
     }
   } catch (error) {
@@ -611,7 +596,7 @@ async function loadChatMessages() {
 }
 
 async function onSendChatMessage() {
-  if (!account || !chatInputHasText() || chatSendInFlight || deployMessengerInFlight) {
+  if (!account || !chatInputHasText() || chatSendInFlight) {
     return;
   }
 
@@ -628,24 +613,12 @@ async function onSendChatMessage() {
     return;
   }
 
-  let contractAddr = getGameMessengerAddress();
+  const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
-    deployMessengerInFlight = true;
     if (chatStatus) {
-      chatStatus.textContent = "Deploying messenger contract in wallet…";
+      chatStatus.textContent = "Shared chat contract is not configured.";
     }
-    updateUI();
-    try {
-      contractAddr = await ensureGameMessengerContract(provider);
-    } catch (error) {
-      if (chatStatus) {
-        chatStatus.textContent = error?.message || "Messenger deploy failed";
-      }
-      return;
-    } finally {
-      deployMessengerInFlight = false;
-      updateUI();
-    }
+    return;
   }
 
   chatSendInFlight = true;
