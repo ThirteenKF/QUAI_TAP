@@ -72,6 +72,37 @@
             </p>
           </div>
 
+          <section id="chatPanel" class="chat-panel" aria-label="On-chain chat">
+            <div class="chat-panel__head">
+              <h2 class="chat-panel__title">On-chain chat</h2>
+              <div class="chat-panel__head-right">
+                <p id="chatContractHint" class="chat-panel__hint">Contract: —</p>
+                <button id="chatToggleBtn" class="chat-toggle-btn" type="button" aria-label="Collapse chat">▾</button>
+              </div>
+            </div>
+            <div id="chatPanelBody" class="chat-panel__body">
+              <div class="chat-tabs" role="tablist" aria-label="Chat rooms">
+                <button id="chatTabGlobal" class="chat-tab chat-tab--active" type="button">Global</button>
+                <button id="chatTabRoom" class="chat-tab" type="button">My Room</button>
+              </div>
+              <ul id="chatMessages" class="chat-messages" aria-live="polite"></ul>
+              <p id="chatStatus" class="chat-status"></p>
+              <div class="chat-compose">
+                <input
+                  id="chatInput"
+                  class="chat-input"
+                  type="text"
+                  maxlength="180"
+                  placeholder="Write a message..."
+                  autocomplete="off"
+                />
+                <button id="chatSendBtn" class="chat-send-btn" type="button" disabled>
+                  Send
+                </button>
+              </div>
+            </div>
+          </section>
+
           <div class="panel-tap-zone">
             <button
               id="tapBtn"

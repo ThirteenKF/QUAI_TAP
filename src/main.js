@@ -5,6 +5,8 @@ import {
   clearTapCounterBinding,
   getMinersRoomDonateAddress,
   setMinersRoomDonateAddress,
+  getGameMessengerAddress,
+  setGameMessengerAddress,
 } from "./contractConfig.js";
 import {
   getPelagusEip1193,
@@ -21,6 +23,13 @@ import {
   deployMinersRoomDonate,
   sendMinersRoomDonate,
 } from "./lib/minersRoomDonateClient.js";
+import {
+  GAME_MESSENGER_GLOBAL_ROOM,
+  deployGameMessenger,
+  postMessage,
+  readRecentMessages,
+  walletRoomKey,
+} from "./lib/gameMessengerClient.js";
 import { syncLeaderboardFromWallet } from "./lib/leaderboardStore.js";
 import { initSoapBackdrop } from "./lib/soapBackdrop.js";
 import { startQuaiPriceTicker } from "./lib/quaiPrice.js";
@@ -50,6 +59,15 @@ const txStatus = document.getElementById("txStatus");
 const donateAmountInput = document.getElementById("donateAmount");
 const donateBtn = document.getElementById("donateBtn");
 const donateStatus = document.getElementById("donateStatus");
+const chatTabGlobal = document.getElementById("chatTabGlobal");
+const chatTabRoom = document.getElementById("chatTabRoom");
+const chatMessages = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
+const chatSendBtn = document.getElementById("chatSendBtn");
+const chatStatus = document.getElementById("chatStatus");
+const chatContractHint = document.getElementById("chatContractHint");
+const chatPanel = document.getElementById("chatPanel");
+const chatToggleBtn = document.getElementById("chatToggleBtn");
 
 let count = 0;
 let account = "";
@@ -60,6 +78,14 @@ let commitInFlight = false;
 let deployInFlight = false;
 let deployDonateInFlight = false;
 let donateInFlight = false;
+let deployMessengerInFlight = false;
+let chatSendInFlight = false;
+let chatPollTimerId = null;
+let activeChatRoom = "global";
+let chatMessagesCache = [];
+let isChatCollapsed = false;
+
+const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
 
 /** Один раз за сессию страницы — иначе дублируются accountsChanged. */
 let walletEventsBound = false;
@@ -218,6 +244,70 @@ function donateInputHasAmount() {
   return raw.length > 0;
 }
 
+function chatInputHasText() {
+  const raw = chatInput?.value?.trim() ?? "";
+  return raw.length > 0;
+}
+
+function currentChatRoomKey() {
+  if (activeChatRoom === "room" && account) {
+    try {
+      return walletRoomKey(account);
+    } catch {
+      return GAME_MESSENGER_GLOBAL_ROOM;
+    }
+  }
+  return GAME_MESSENGER_GLOBAL_ROOM;
+}
+
+function formatChatTimestamp(ts) {
+  const n = Number(ts ?? 0);
+  if (!Number.isFinite(n) || n <= 0) {
+    return "—";
+  }
+  return new Date(n * 1000).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderChatMessages() {
+  if (!chatMessages) {
+    return;
+  }
+  if (!chatMessagesCache.length) {
+    chatMessages.innerHTML = `<li class="chat-message chat-message--empty">No messages yet.</li>`;
+    return;
+  }
+
+  chatMessages.innerHTML = "";
+  for (const msg of chatMessagesCache) {
+    const item = document.createElement("li");
+    item.className = "chat-message";
+    const from = shortenAddress(msg.author || "");
+    const time = formatChatTimestamp(msg.timestamp);
+    item.innerHTML = `<span class="chat-message__meta">${from} · ${time}</span><span class="chat-message__text"></span>`;
+    item.querySelector(".chat-message__text").textContent = msg.text || "";
+    chatMessages.append(item);
+  }
+}
+
+function loadChatUiPrefs() {
+  try {
+    isChatCollapsed = localStorage.getItem(CHAT_COLLAPSE_KEY) === "1";
+  } catch {
+    isChatCollapsed = false;
+  }
+}
+
+function saveChatUiPrefs() {
+  try {
+    localStorage.setItem(CHAT_COLLAPSE_KEY, isChatCollapsed ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
 function updateUI() {
   if (tapBtn) {
     tapBtn.disabled =
@@ -260,6 +350,42 @@ function updateUI() {
       deployDonateInFlight ||
       deployInFlight ||
       commitInFlight;
+  }
+
+  const messengerAddr = getGameMessengerAddress();
+  if (chatContractHint) {
+    chatContractHint.textContent = messengerAddr
+      ? `Contract: ${shortenAddress(messengerAddr)}`
+      : "Contract: will deploy on first message";
+  }
+
+  if (chatTabGlobal && chatTabRoom) {
+    chatTabGlobal.classList.toggle("chat-tab--active", activeChatRoom === "global");
+    chatTabRoom.classList.toggle("chat-tab--active", activeChatRoom === "room");
+    chatTabRoom.disabled = !account;
+  }
+
+  if (chatSendBtn) {
+    chatSendBtn.disabled =
+      !account ||
+      !chatInputHasText() ||
+      deployInFlight ||
+      donateInFlight ||
+      deployDonateInFlight ||
+      commitInFlight ||
+      deployMessengerInFlight ||
+      chatSendInFlight;
+  }
+
+  if (chatPanel) {
+    chatPanel.classList.toggle("chat-panel--collapsed", isChatCollapsed);
+  }
+  if (chatToggleBtn) {
+    chatToggleBtn.textContent = isChatCollapsed ? "▴" : "▾";
+    chatToggleBtn.setAttribute(
+      "aria-label",
+      isChatCollapsed ? "Expand chat" : "Collapse chat",
+    );
   }
 }
 
@@ -346,6 +472,7 @@ function bindProviderEvents() {
     chainTotal = 0n;
     saveState();
     updateUI();
+    await loadChatMessages();
     if (account) {
       await fetchChainTotal(account);
       updateUI();
@@ -355,6 +482,7 @@ function bindProviderEvents() {
 
   provider.on("chainChanged", async () => {
     updateUI();
+    await loadChatMessages();
     if (account) {
       await fetchChainTotal(account);
       updateUI();
@@ -433,6 +561,118 @@ async function ensureMinersRoomDonateContract(provider) {
     // ignore
   }
   return addr;
+}
+
+async function ensureGameMessengerContract(provider) {
+  const existing = getGameMessengerAddress();
+  if (existing) {
+    return existing;
+  }
+  await ensureActiveQuaiChain(provider);
+  const addr = await deployGameMessenger(provider);
+  setGameMessengerAddress(addr);
+  return addr;
+}
+
+async function loadChatMessages() {
+  const contractAddr = getGameMessengerAddress();
+  if (!contractAddr) {
+    chatMessagesCache = [];
+    renderChatMessages();
+    if (chatStatus) {
+      chatStatus.textContent = "Send first message to deploy chat contract.";
+    }
+    return;
+  }
+
+  const provider = getWallet();
+  if (!provider) {
+    return;
+  }
+
+  try {
+    const roomKey = currentChatRoomKey();
+    const rows = await readRecentMessages(provider, contractAddr, roomKey, 20);
+    chatMessagesCache = rows.map((m) => ({
+      author: String(m.author ?? ""),
+      timestamp: BigInt(m.timestamp ?? 0n),
+      text: String(m.text ?? ""),
+    }));
+    renderChatMessages();
+    if (chatStatus && !chatSendInFlight && !deployMessengerInFlight) {
+      chatStatus.textContent = "";
+    }
+  } catch (error) {
+    if (chatStatus) {
+      const msg = error?.message || "Chat fetch error";
+      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
+    }
+  }
+}
+
+async function onSendChatMessage() {
+  if (!account || !chatInputHasText() || chatSendInFlight || deployMessengerInFlight) {
+    return;
+  }
+
+  const provider = getWallet();
+  if (!provider) {
+    if (chatStatus) {
+      chatStatus.textContent = "Wallet not found";
+    }
+    return;
+  }
+
+  const text = chatInput?.value?.trim() ?? "";
+  if (!text) {
+    return;
+  }
+
+  let contractAddr = getGameMessengerAddress();
+  if (!contractAddr) {
+    deployMessengerInFlight = true;
+    if (chatStatus) {
+      chatStatus.textContent = "Deploying messenger contract in wallet…";
+    }
+    updateUI();
+    try {
+      contractAddr = await ensureGameMessengerContract(provider);
+    } catch (error) {
+      if (chatStatus) {
+        chatStatus.textContent = error?.message || "Messenger deploy failed";
+      }
+      return;
+    } finally {
+      deployMessengerInFlight = false;
+      updateUI();
+    }
+  }
+
+  chatSendInFlight = true;
+  if (chatStatus) {
+    chatStatus.textContent = "Confirm chat transaction in wallet…";
+  }
+  updateUI();
+  try {
+    await ensureActiveQuaiChain(provider);
+    await provider.request({ method: "eth_requestAccounts" });
+    await postMessage(provider, contractAddr, currentChatRoomKey(), text);
+    if (chatInput) {
+      chatInput.value = "";
+    }
+    if (chatStatus) {
+      chatStatus.textContent = "Message sent.";
+    }
+    await loadChatMessages();
+  } catch (error) {
+    if (chatStatus) {
+      const msg = error?.shortMessage || error?.message || "Send failed";
+      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
+    }
+  } finally {
+    chatSendInFlight = false;
+    updateUI();
+  }
 }
 
 async function onDonateMinersRoom() {
@@ -697,12 +937,14 @@ async function init() {
   startNetworkHashrateTicker(document.getElementById("quaiHashrate"));
   initSoapBackdrop(document.getElementById("soapBackdrop"));
   loadState();
+  loadChatUiPrefs();
   if (tapBtnArt) {
     tapBtnArt.src = tapButtonImageUrl(TAP_BTN_ART_FILE);
   }
 
   updateUI();
   bindProviderEvents();
+  await loadChatMessages();
 
   if (account) {
     const provider = getWallet();
@@ -717,6 +959,7 @@ async function init() {
       }
       updateUI();
       await maybeCommitTenTaps();
+      await loadChatMessages();
     } else {
       walletStatus.textContent = "Open this page in a browser with Pelagus";
     }
@@ -743,6 +986,38 @@ async function init() {
   donateAmountInput?.addEventListener("input", () => {
     updateUI();
   });
+  chatInput?.addEventListener("input", () => {
+    updateUI();
+  });
+  chatSendBtn?.addEventListener("click", onSendChatMessage);
+  chatToggleBtn?.addEventListener("click", () => {
+    isChatCollapsed = !isChatCollapsed;
+    saveChatUiPrefs();
+    updateUI();
+  });
+  chatTabGlobal?.addEventListener("click", async () => {
+    activeChatRoom = "global";
+    updateUI();
+    await loadChatMessages();
+  });
+  chatTabRoom?.addEventListener("click", async () => {
+    if (!account) {
+      if (chatStatus) {
+        chatStatus.textContent = "Connect wallet to open My Room.";
+      }
+      return;
+    }
+    activeChatRoom = "room";
+    updateUI();
+    await loadChatMessages();
+  });
+
+  if (chatPollTimerId != null) {
+    window.clearInterval(chatPollTimerId);
+  }
+  chatPollTimerId = window.setInterval(() => {
+    void loadChatMessages();
+  }, 8000);
 }
 
 init();

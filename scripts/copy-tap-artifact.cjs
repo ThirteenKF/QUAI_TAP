@@ -15,6 +15,10 @@ const pairs = [
     "artifacts/contracts/MinersRoomDonate.sol/MinersRoomDonate.json",
     "src/minersRoomDonateArtifact.json",
   ],
+  [
+    "artifacts/contracts/GameMessenger.sol/GameMessenger.json",
+    "src/gameMessengerArtifact.json",
+  ],
 ];
 
 let ok = true;

@@ -6,6 +6,8 @@ const IGNORE_VITE_CONTRACT_KEY = "quai_tap_ignore_vite_contract";
 
 const LOCAL_MINERS_DONATE_KEY = "quai_miners_room_donate_address";
 const IGNORE_VITE_MINERS_DONATE_KEY = "quai_miners_room_donate_ignore_vite";
+const LOCAL_GAME_MESSENGER_KEY = "quai_game_messenger_address";
+const IGNORE_VITE_GAME_MESSENGER_KEY = "quai_game_messenger_ignore_vite";
 
 const chain = getActiveChain();
 
@@ -91,6 +93,43 @@ export function setMinersRoomDonateAddress(address) {
       localStorage.removeItem(IGNORE_VITE_MINERS_DONATE_KEY);
     } else {
       localStorage.removeItem(LOCAL_MINERS_DONATE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Контракт on-chain мессенджера: localStorage -> иначе VITE_GAME_MESSENGER_ADDRESS.
+ */
+export function getGameMessengerAddress() {
+  try {
+    const fromStorage = localStorage.getItem(LOCAL_GAME_MESSENGER_KEY)?.trim();
+    if (fromStorage) {
+      return fromStorage;
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    if (localStorage.getItem(IGNORE_VITE_GAME_MESSENGER_KEY) === "1") {
+      return "";
+    }
+  } catch {
+    // ignore
+  }
+  return import.meta.env.VITE_GAME_MESSENGGER_ADDRESS?.trim()
+    || import.meta.env.VITE_GAME_MESSENGER_ADDRESS?.trim()
+    || "";
+}
+
+export function setGameMessengerAddress(address) {
+  try {
+    if (address) {
+      localStorage.setItem(LOCAL_GAME_MESSENGER_KEY, address);
+      localStorage.removeItem(IGNORE_VITE_GAME_MESSENGER_KEY);
+    } else {
+      localStorage.removeItem(LOCAL_GAME_MESSENGER_KEY);
     }
   } catch {
     // ignore
