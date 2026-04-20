@@ -7,6 +7,16 @@ const TAPS_PER_TICKET = 10n;
 const MAX_BLOCK_RANGE = 10_000n;
 const TEN_TAPS_COMMITTED_TOPIC =
   "0x6cfbb6b5dda8a561b6c2f7d1f7322004391578f045de6b7e97052ad1674cceab";
+const SHARED_TAP_COUNTER_ADDRESS =
+  import.meta.env.VITE_TAP_COUNTER_ADDRESS?.trim() || "";
+
+function resolveLeaderboardContractAddress() {
+  // For global leaderboard prefer one shared contract address from env.
+  if (SHARED_TAP_COUNTER_ADDRESS) {
+    return SHARED_TAP_COUNTER_ADDRESS;
+  }
+  return getTapCounterAddress();
+}
 
 function shortenAddress(address) {
   if (!address || address.length < 10) {
@@ -34,7 +44,7 @@ function topicToAddress(topic) {
 }
 
 async function fetchOnchainLeaderboard() {
-  const contractAddress = getTapCounterAddress();
+  const contractAddress = resolveLeaderboardContractAddress();
   if (!contractAddress) {
     return [];
   }
