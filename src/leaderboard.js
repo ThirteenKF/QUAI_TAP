@@ -65,8 +65,36 @@ async function fetchOnchainLeaderboard() {
   const latestHex = await rpcCall("eth_blockNumber", []);
   const latest = parseBigIntHex(latestHex);
   const byWallet = new Map();
+  let deployBlock = 0n;
 
-  for (let from = 0n; from <= latest; from += MAX_BLOCK_RANGE) {
+  // Find first block where contract code exists to avoid scanning from genesis.
+  const hasCodeAt = async (block) => {
+    const code = await rpcCall("eth_getCode", [
+      contractAddress,
+      `0x${block.toString(16)}`,
+    ]);
+    return typeof code === "string" && code !== "0x";
+  };
+  if (latest > 0n) {
+    const hasCodeLatest = await hasCodeAt(latest);
+    if (hasCodeLatest) {
+      let lo = 0n;
+      let hi = latest;
+      while (lo < hi) {
+        const mid = (lo + hi) / 2n;
+        // eslint-disable-next-line no-await-in-loop
+        const exists = await hasCodeAt(mid);
+        if (exists) {
+          hi = mid;
+        } else {
+          lo = mid + 1n;
+        }
+      }
+      deployBlock = lo;
+    }
+  }
+
+  for (let from = deployBlock; from <= latest; from += MAX_BLOCK_RANGE) {
     const to = from + MAX_BLOCK_RANGE - 1n > latest ? latest : from + MAX_BLOCK_RANGE - 1n;
     const logs = await rpcCall("eth_getLogs", [
       {
@@ -120,17 +148,23 @@ function renderLeaderboard(leaderboard) {
 }
 
 async function initLeaderboard() {
-  let leaderboard = [];
-  try {
-    leaderboard = await fetchOnchainLeaderboard();
-  } catch {
-    leaderboard = [];
-  }
+  const localLeaderboard = loadLeaderboard();
+  renderLeaderboard(localLeaderboard);
 
-  if (!leaderboard.length) {
-    leaderboard = loadLeaderboard();
+  try {
+    const onchainLeaderboard = await fetchOnchainLeaderboard();
+    if (onchainLeaderboard.length) {
+      renderLeaderboard(onchainLeaderboard);
+      return;
+    }
+    if (!localLeaderboard.length) {
+      renderLeaderboard([]);
+    }
+  } catch {
+    if (!localLeaderboard.length) {
+      renderLeaderboard([]);
+    }
   }
-  renderLeaderboard(leaderboard);
 }
 
 initLeaderboard();
