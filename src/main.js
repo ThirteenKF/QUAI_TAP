@@ -6,6 +6,7 @@ import {
   getMinersRoomDonateAddress,
   setMinersRoomDonateAddress,
   getGameMessengerAddress,
+  setGameMessengerAddress,
 } from "./contractConfig.js";
 import {
   getPelagusEip1193,
@@ -24,6 +25,8 @@ import {
 } from "./lib/minersRoomDonateClient.js";
 import {
   GAME_MESSENGER_GLOBAL_ROOM,
+  assertMessengerContractReadable,
+  deployGameMessenger,
   postMessage,
   readRecentMessages,
   walletRoomKey,
@@ -64,6 +67,7 @@ const chatInput = document.getElementById("chatInput");
 const chatSendBtn = document.getElementById("chatSendBtn");
 const chatStatus = document.getElementById("chatStatus");
 const chatContractHint = document.getElementById("chatContractHint");
+const chatDeployBtn = document.getElementById("chatDeployBtn");
 const chatPanel = document.getElementById("chatPanel");
 const chatToggleBtn = document.getElementById("chatToggleBtn");
 
@@ -76,6 +80,7 @@ let commitInFlight = false;
 let deployInFlight = false;
 let deployDonateInFlight = false;
 let donateInFlight = false;
+let deployMessengerInFlight = false;
 let chatSendInFlight = false;
 let chatPollTimerId = null;
 let activeChatRoom = "global";
@@ -83,7 +88,6 @@ let chatMessagesCache = [];
 let isChatCollapsed = false;
 
 const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
-const CHAT_FALLBACK_KEY = "quai_chat_fallback_v1";
 
 /** Один раз за сессию страницы — иначе дублируются accountsChanged. */
 let walletEventsBound = false;
@@ -290,55 +294,6 @@ function renderChatMessages() {
   }
 }
 
-function chatStorageRoom() {
-  return activeChatRoom === "room" && account ? `room:${account.toLowerCase()}` : "global";
-}
-
-function loadFallbackChatMessages() {
-  try {
-    const raw = localStorage.getItem(CHAT_FALLBACK_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    const room = chatStorageRoom();
-    return parsed.filter((x) => x && x.room === room).slice(-20);
-  } catch {
-    return [];
-  }
-}
-
-function appendFallbackChatMessage(text) {
-  const item = {
-    room: chatStorageRoom(),
-    author: account || "guest",
-    timestamp: BigInt(Math.floor(Date.now() / 1000)).toString(),
-    text: String(text || "").trim(),
-  };
-  try {
-    const raw = localStorage.getItem(CHAT_FALLBACK_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    const next = Array.isArray(parsed) ? parsed : [];
-    next.push(item);
-    localStorage.setItem(CHAT_FALLBACK_KEY, JSON.stringify(next.slice(-400)));
-  } catch {
-    // ignore
-  }
-}
-
-function isZoneError(error) {
-  const msg = String(error?.message || "");
-  return (
-    msg.includes("Invalid zone") ||
-    msg.includes("invalid zone") ||
-    msg.includes("Address belongs to other zone") ||
-    msg.includes("expected Quai address")
-  );
-}
-
 function loadChatUiPrefs() {
   try {
     isChatCollapsed = localStorage.getItem(CHAT_COLLAPSE_KEY) === "1";
@@ -403,7 +358,7 @@ function updateUI() {
   if (chatContractHint) {
     chatContractHint.textContent = messengerAddr
       ? `Contract: ${shortenAddress(messengerAddr)}`
-      : "Contract: set VITE_GAME_MESSENGER_ADDRESS";
+      : "Contract: deploy in wallet";
   }
 
   if (chatTabGlobal && chatTabRoom) {
@@ -415,11 +370,24 @@ function updateUI() {
   if (chatSendBtn) {
     chatSendBtn.disabled =
       !account ||
+      !messengerAddr ||
       !chatInputHasText() ||
       deployInFlight ||
       donateInFlight ||
       deployDonateInFlight ||
       commitInFlight ||
+      deployMessengerInFlight ||
+      chatSendInFlight;
+  }
+
+  if (chatDeployBtn) {
+    chatDeployBtn.disabled =
+      !account ||
+      deployInFlight ||
+      donateInFlight ||
+      deployDonateInFlight ||
+      commitInFlight ||
+      deployMessengerInFlight ||
       chatSendInFlight;
   }
 
@@ -613,15 +581,9 @@ async function loadChatMessages() {
   const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
     chatMessagesCache = [];
-    const fallback = loadFallbackChatMessages();
-    chatMessagesCache = fallback.map((m) => ({
-      author: String(m.author || ""),
-      timestamp: BigInt(m.timestamp || 0),
-      text: String(m.text || ""),
-    }));
     renderChatMessages();
     if (chatStatus) {
-      chatStatus.textContent = "Chat fallback mode (no shared contract configured).";
+      chatStatus.textContent = "Deploy chat contract in wallet to start messaging.";
     }
     return;
   }
@@ -632,6 +594,7 @@ async function loadChatMessages() {
   }
 
   try {
+    await assertMessengerContractReadable(provider, contractAddr);
     const roomKey = currentChatRoomKey();
     const rows = await readRecentMessages(provider, contractAddr, roomKey, 20);
     chatMessagesCache = rows.map((m) => ({
@@ -644,26 +607,17 @@ async function loadChatMessages() {
       chatStatus.textContent = "";
     }
   } catch (error) {
-    const fallback = loadFallbackChatMessages();
-    chatMessagesCache = fallback.map((m) => ({
-      author: String(m.author || ""),
-      timestamp: BigInt(m.timestamp || 0),
-      text: String(m.text || ""),
-    }));
+    chatMessagesCache = [];
     renderChatMessages();
     if (chatStatus) {
       const msg = error?.shortMessage || error?.message || "Chat fetch error";
-      const suffix = isZoneError(error)
-        ? "Fallback mode (zone mismatch)."
-        : "Fallback mode (network error).";
-      chatStatus.textContent =
-        `${suffix} ${msg.length > 100 ? `${msg.slice(0, 97)}…` : msg}`;
+      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
     }
   }
 }
 
 async function onSendChatMessage() {
-  if (!account || !chatInputHasText() || chatSendInFlight) {
+  if (!account || !chatInputHasText() || chatSendInFlight || deployMessengerInFlight) {
     return;
   }
 
@@ -682,14 +636,9 @@ async function onSendChatMessage() {
 
   const contractAddr = getGameMessengerAddress();
   if (!contractAddr) {
-    appendFallbackChatMessage(text);
-    if (chatInput) {
-      chatInput.value = "";
-    }
     if (chatStatus) {
-      chatStatus.textContent = "Message sent (fallback mode).";
+      chatStatus.textContent = "Deploy chat contract first.";
     }
-    await loadChatMessages();
     return;
   }
 
@@ -701,6 +650,7 @@ async function onSendChatMessage() {
   try {
     await ensureActiveQuaiChain(provider);
     await provider.request({ method: "eth_requestAccounts" });
+    await assertMessengerContractReadable(provider, contractAddr);
     await postMessage(provider, contractAddr, currentChatRoomKey(), text);
     if (chatInput) {
       chatInput.value = "";
@@ -710,21 +660,67 @@ async function onSendChatMessage() {
     }
     await loadChatMessages();
   } catch (error) {
-    appendFallbackChatMessage(text);
-    if (chatInput) {
-      chatInput.value = "";
-    }
     if (chatStatus) {
       const msg = error?.shortMessage || error?.message || "Send failed";
-      const suffix = isZoneError(error)
-        ? "Message sent (fallback mode: zone mismatch)."
-        : "Message sent (fallback mode: network error).";
-      chatStatus.textContent =
-        `${suffix} ${msg.length > 100 ? `${msg.slice(0, 97)}…` : msg}`;
+      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
     }
-    await loadChatMessages();
   } finally {
     chatSendInFlight = false;
+    updateUI();
+  }
+}
+
+async function onDeployChatContract() {
+  if (!account || deployMessengerInFlight) {
+    return;
+  }
+  const provider = getWallet();
+  if (!provider) {
+    if (chatStatus) {
+      chatStatus.textContent = "Wallet not found";
+    }
+    return;
+  }
+
+  deployMessengerInFlight = true;
+  if (chatStatus) {
+    chatStatus.textContent = "Deploying chat contract in wallet…";
+  }
+  updateUI();
+  try {
+    await ensureActiveQuaiChain(provider);
+    const existingAddr = getGameMessengerAddress();
+    if (existingAddr) {
+      try {
+        await assertMessengerContractReadable(provider, existingAddr);
+        if (chatStatus) {
+          chatStatus.textContent = `Chat contract already valid: ${shortenAddress(existingAddr)}`;
+        }
+        return;
+      } catch {
+        // Existing address is invalid for current zone; deploy a new one below.
+      }
+    }
+
+    const addr = await deployGameMessenger(provider);
+    await assertMessengerContractReadable(provider, addr);
+    setGameMessengerAddress(addr);
+    if (chatStatus) {
+      chatStatus.textContent = `Chat contract deployed: ${shortenAddress(addr)}`;
+    }
+    try {
+      await navigator.clipboard.writeText(addr);
+    } catch {
+      // ignore
+    }
+    await loadChatMessages();
+  } catch (error) {
+    if (chatStatus) {
+      const msg = error?.shortMessage || error?.message || "Deploy failed";
+      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
+    }
+  } finally {
+    deployMessengerInFlight = false;
     updateUI();
   }
 }
@@ -1044,6 +1040,7 @@ async function init() {
     updateUI();
   });
   chatSendBtn?.addEventListener("click", onSendChatMessage);
+  chatDeployBtn?.addEventListener("click", onDeployChatContract);
   chatToggleBtn?.addEventListener("click", () => {
     isChatCollapsed = !isChatCollapsed;
     saveChatUiPrefs();

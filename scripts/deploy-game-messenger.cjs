@@ -3,6 +3,7 @@
  */
 const hre = require("hardhat");
 const quais = require("quais");
+const DEPLOY_GAS_LIMIT = 2_800_000n;
 
 async function main() {
   const pk = hre.network.config.accounts?.[0];
@@ -33,7 +34,7 @@ async function main() {
 
   console.log("Sending deployment transaction...");
   const c = await withTimeout(
-    factory.deploy({ gasLimit: 6_000_000n }),
+    factory.deploy({ gasLimit: DEPLOY_GAS_LIMIT }),
     900_000,
     "Deploy transaction was not created in 900s. Check RPC and wallet key balance.",
   );

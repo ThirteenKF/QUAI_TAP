@@ -1,18 +1,48 @@
-import { BrowserProvider, Contract, ContractFactory, getAddress, keccak256 } from "quais";
+import {
+  BrowserProvider,
+  Contract,
+  ContractFactory,
+  getAddress,
+  getAddressDetails,
+  Ledger,
+  keccak256,
+} from "quais";
 import gameMessengerArtifact from "../gameMessengerArtifact.json";
 import { prepareWalletUiFocus } from "./wallet/pelagus.js";
 import {
   QUAIS_DEPLOY_IPFS_PLACEHOLDER,
-  DEPLOY_GAS_LIMIT,
   withTimeout,
 } from "./tapCounterClient.js";
 
 export const GAME_MESSENGER_ABI = gameMessengerArtifact.abi;
 export const GAME_MESSENGER_GLOBAL_ROOM = `0x${"00".repeat(32)}`;
+export const GAME_MESSENGER_DEPLOY_GAS_LIMIT = 2_800_000n;
 export const GAME_MESSENGER_POST_GAS_LIMIT = 1_200_000n;
 
 export function walletRoomKey(address) {
   return keccak256(getAddress(String(address).trim()));
+}
+
+export async function assertMessengerContractReadable(eip1193Provider, contractAddr) {
+  const to = getAddress(String(contractAddr || "").trim());
+  let details;
+  try {
+    details = getAddressDetails(to);
+  } catch {
+    throw new Error("Messenger address has invalid zone for this network");
+  }
+  if (!details || details.ledger !== Ledger.Quai) {
+    throw new Error("Messenger must be deployed to Quai ledger");
+  }
+
+  const code = await eip1193Provider.request({
+    method: "eth_getCode",
+    params: [to, "latest"],
+  });
+  if (!code || code === "0x") {
+    throw new Error("No contract code at messenger address");
+  }
+  return true;
 }
 
 export async function deployGameMessenger(eip1193Provider) {
@@ -24,7 +54,7 @@ export async function deployGameMessenger(eip1193Provider) {
   factory.setIPFSHash(QUAIS_DEPLOY_IPFS_PLACEHOLDER);
   prepareWalletUiFocus();
   const contract = await withTimeout(
-    factory.deploy({ gasLimit: DEPLOY_GAS_LIMIT }),
+    factory.deploy({ gasLimit: GAME_MESSENGER_DEPLOY_GAS_LIMIT }),
     180_000,
     "Messenger deploy: no response for 3 min. Reload the page and Pelagus.",
   );

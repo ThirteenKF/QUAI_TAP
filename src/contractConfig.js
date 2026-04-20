@@ -6,8 +6,7 @@ const IGNORE_VITE_CONTRACT_KEY = "quai_tap_ignore_vite_contract";
 
 const LOCAL_MINERS_DONATE_KEY = "quai_miners_room_donate_address";
 const IGNORE_VITE_MINERS_DONATE_KEY = "quai_miners_room_donate_ignore_vite";
-const DEFAULT_GAME_MESSENGER_ADDRESS =
-  "0xa64284C99231531A9cFDB7EB7Eb0C65e921A7991";
+const LOCAL_GAME_MESSENGER_KEY = "quai_game_messenger_address";
 
 const chain = getActiveChain();
 
@@ -100,10 +99,8 @@ export function setMinersRoomDonateAddress(address) {
 }
 
 /**
- * Контракт on-chain мессенджера: общий адрес из env имеет приоритет,
- * чтобы все пользователи читали/писали один и тот же Global чат.
- * LocalStorage здесь намеренно не используется, иначе клиенты могут
- * разойтись по разным адресам контрактов.
+ * Контракт on-chain мессенджера: общий адрес из env имеет приоритет.
+ * Если env не задан, используется локально задеплоенный адрес (из браузера).
  */
 export function getGameMessengerAddress() {
   const fromEnv =
@@ -113,10 +110,26 @@ export function getGameMessengerAddress() {
   if (fromEnv) {
     return fromEnv;
   }
-  return DEFAULT_GAME_MESSENGER_ADDRESS;
+
+  try {
+    const fromStorage = localStorage.getItem(LOCAL_GAME_MESSENGER_KEY)?.trim();
+    if (fromStorage) {
+      return fromStorage;
+    }
+  } catch {
+    // ignore
+  }
+  return "";
 }
 
 export function setGameMessengerAddress(address) {
-  // intentionally no-op for shared global chat mode
-  void address;
+  try {
+    if (address) {
+      localStorage.setItem(LOCAL_GAME_MESSENGER_KEY, address);
+    } else {
+      localStorage.removeItem(LOCAL_GAME_MESSENGER_KEY);
+    }
+  } catch {
+    // ignore
+  }
 }
