@@ -280,7 +280,18 @@ function renderChatMessages() {
   }
 
   chatMessages.innerHTML = "";
-  for (const msg of chatMessagesCache) {
+  const ordered = [...chatMessagesCache].sort((a, b) => {
+    const ta = BigInt(a?.timestamp ?? 0n);
+    const tb = BigInt(b?.timestamp ?? 0n);
+    if (tb > ta) {
+      return 1;
+    }
+    if (tb < ta) {
+      return -1;
+    }
+    return 0;
+  });
+  for (const msg of ordered) {
     const item = document.createElement("li");
     item.className = "chat-message";
     const from = shortenAddress(msg.author || "");
