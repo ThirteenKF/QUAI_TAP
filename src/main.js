@@ -383,6 +383,7 @@ function updateUI() {
   if (chatDeployBtn) {
     chatDeployBtn.disabled =
       !account ||
+      Boolean(messengerAddr) ||
       deployInFlight ||
       donateInFlight ||
       deployDonateInFlight ||
@@ -423,6 +424,7 @@ async function signConnection(provider, address) {
 async function connectWallet() {
   if (account) {
     account = "";
+    activeChatRoom = "global";
     connectionSignature = "";
     saveState();
     updateUI();
@@ -455,6 +457,7 @@ async function connectWallet() {
     await ensureActiveQuaiChain(provider);
 
     account = nextAccount;
+    activeChatRoom = "global";
     connectionSignature = signature;
     saveState();
     updateUI();
@@ -482,6 +485,7 @@ function bindProviderEvents() {
 
   provider.on("accountsChanged", async (accounts) => {
     account = accounts?.[0] || "";
+    activeChatRoom = "global";
     connectionSignature = "";
     chainTotal = 0n;
     saveState();
