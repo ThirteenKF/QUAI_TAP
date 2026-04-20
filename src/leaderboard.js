@@ -15,7 +15,8 @@ function resolveLeaderboardContractAddress() {
   if (SHARED_TAP_COUNTER_ADDRESS) {
     return SHARED_TAP_COUNTER_ADDRESS;
   }
-  return getTapCounterAddress();
+  // If shared address is not configured, scan by event topic across all contracts.
+  return "";
 }
 
 function shortenAddress(address) {
@@ -45,9 +46,7 @@ function topicToAddress(topic) {
 
 async function fetchOnchainLeaderboard() {
   const contractAddress = resolveLeaderboardContractAddress();
-  if (!contractAddress) {
-    return [];
-  }
+  const fallbackContractAddress = getTapCounterAddress();
 
   const rpcCall = async (method, params, attempts = 3) => {
     const payload = {
@@ -90,13 +89,16 @@ async function fetchOnchainLeaderboard() {
 
   // Find first block where contract code exists to avoid scanning from genesis.
   const hasCodeAt = async (block) => {
+    if (!contractAddress) {
+      return false;
+    }
     const code = await rpcCall("eth_getCode", [
       contractAddress,
       `0x${block.toString(16)}`,
     ]);
     return typeof code === "string" && code !== "0x";
   };
-  if (latest > 0n) {
+  if (latest > 0n && contractAddress) {
     try {
       const hasCodeLatest = await hasCodeAt(latest);
       if (hasCodeLatest) {
@@ -125,13 +127,16 @@ async function fetchOnchainLeaderboard() {
     let logs = [];
     try {
       // eslint-disable-next-line no-await-in-loop
+      const filter = {
+        fromBlock: `0x${from.toString(16)}`,
+        toBlock: `0x${to.toString(16)}`,
+        topics: [TEN_TAPS_COMMITTED_TOPIC],
+      };
+      if (contractAddress) {
+        filter.address = contractAddress;
+      }
       logs = await rpcCall("eth_getLogs", [
-        {
-          address: contractAddress,
-          fromBlock: `0x${from.toString(16)}`,
-          toBlock: `0x${to.toString(16)}`,
-          topics: [TEN_TAPS_COMMITTED_TOPIC],
-        },
+        filter,
       ]);
     } catch {
       continue;
@@ -142,12 +147,29 @@ async function fetchOnchainLeaderboard() {
       if (!wallet) {
         continue;
       }
-      const newTotal = parseBigIntHex(log?.data);
-      const tickets = Number(newTotal / TAPS_PER_TICKET);
-      if (!Number.isFinite(tickets) || tickets <= 0) {
+      const prev = byWallet.get(wallet) || 0;
+      byWallet.set(wallet, prev + 1);
+    }
+  }
+
+  // Safety fallback for old single-contract clients when global scan returns nothing.
+  if (!byWallet.size && fallbackContractAddress && !contractAddress) {
+    const logs = await rpcCall("eth_getLogs", [
+      {
+        address: fallbackContractAddress,
+        fromBlock: "0x0",
+        toBlock: "latest",
+        topics: [TEN_TAPS_COMMITTED_TOPIC],
+      },
+    ]);
+    const safeLogs = Array.isArray(logs) ? logs : [];
+    for (const log of safeLogs) {
+      const wallet = topicToAddress(log?.topics?.[1]);
+      if (!wallet) {
         continue;
       }
-      byWallet.set(wallet, tickets);
+      const prev = byWallet.get(wallet) || 0;
+      byWallet.set(wallet, prev + 1);
     }
   }
 
