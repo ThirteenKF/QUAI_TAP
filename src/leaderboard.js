@@ -4,7 +4,7 @@ import { QUAI_RPC_URL, getTapCounterAddress } from "./contractConfig.js";
 
 const leaderboardList = document.getElementById("leaderboardList");
 const TAPS_PER_TICKET = 10n;
-const MAX_BLOCK_RANGE = 10_000n;
+const MAX_BLOCK_RANGE = 5_000n;
 const TEN_TAPS_COMMITTED_TOPIC =
   "0x6cfbb6b5dda8a561b6c2f7d1f7322004391578f045de6b7e97052ad1674cceab";
 const SHARED_TAP_COUNTER_ADDRESS =
@@ -49,27 +49,38 @@ async function fetchOnchainLeaderboard() {
     return [];
   }
 
-  const rpcCall = async (method, params) => {
+  const rpcCall = async (method, params, attempts = 3) => {
     const payload = {
       jsonrpc: "2.0",
       id: Date.now(),
       method,
       params,
     };
-
-    const response = await fetch(QUAI_RPC_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      throw new Error(`RPC error ${response.status}`);
+    let lastError = null;
+    for (let i = 0; i < attempts; i += 1) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await fetch(QUAI_RPC_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error(`RPC error ${response.status}`);
+        }
+        // eslint-disable-next-line no-await-in-loop
+        const json = await response.json();
+        if (json?.error) {
+          throw new Error(String(json.error.message || "RPC method failed"));
+        }
+        return json?.result;
+      } catch (err) {
+        lastError = err;
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+      }
     }
-    const json = await response.json();
-    if (json?.error) {
-      throw new Error(String(json.error.message || "RPC method failed"));
-    }
-    return json?.result;
+    throw lastError || new Error("RPC request failed");
   };
 
   const latestHex = await rpcCall("eth_blockNumber", []);
@@ -86,34 +97,45 @@ async function fetchOnchainLeaderboard() {
     return typeof code === "string" && code !== "0x";
   };
   if (latest > 0n) {
-    const hasCodeLatest = await hasCodeAt(latest);
-    if (hasCodeLatest) {
-      let lo = 0n;
-      let hi = latest;
-      while (lo < hi) {
-        const mid = (lo + hi) / 2n;
-        // eslint-disable-next-line no-await-in-loop
-        const exists = await hasCodeAt(mid);
-        if (exists) {
-          hi = mid;
-        } else {
-          lo = mid + 1n;
+    try {
+      const hasCodeLatest = await hasCodeAt(latest);
+      if (hasCodeLatest) {
+        let lo = 0n;
+        let hi = latest;
+        while (lo < hi) {
+          const mid = (lo + hi) / 2n;
+          // eslint-disable-next-line no-await-in-loop
+          const exists = await hasCodeAt(mid);
+          if (exists) {
+            hi = mid;
+          } else {
+            lo = mid + 1n;
+          }
         }
+        deployBlock = lo;
       }
-      deployBlock = lo;
+    } catch {
+      // Some Quai RPC providers do not support historic block arg in eth_getCode.
+      deployBlock = 0n;
     }
   }
 
   for (let from = deployBlock; from <= latest; from += MAX_BLOCK_RANGE) {
     const to = from + MAX_BLOCK_RANGE - 1n > latest ? latest : from + MAX_BLOCK_RANGE - 1n;
-    const logs = await rpcCall("eth_getLogs", [
-      {
-        address: contractAddress,
-        fromBlock: `0x${from.toString(16)}`,
-        toBlock: `0x${to.toString(16)}`,
-        topics: [TEN_TAPS_COMMITTED_TOPIC],
-      },
-    ]);
+    let logs = [];
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      logs = await rpcCall("eth_getLogs", [
+        {
+          address: contractAddress,
+          fromBlock: `0x${from.toString(16)}`,
+          toBlock: `0x${to.toString(16)}`,
+          topics: [TEN_TAPS_COMMITTED_TOPIC],
+        },
+      ]);
+    } catch {
+      continue;
+    }
     const safeLogs = Array.isArray(logs) ? logs : [];
     for (const log of safeLogs) {
       const wallet = topicToAddress(log?.topics?.[1]);
