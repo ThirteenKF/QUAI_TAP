@@ -6,7 +6,6 @@ const IGNORE_VITE_CONTRACT_KEY = "quai_tap_ignore_vite_contract";
 
 const LOCAL_MINERS_DONATE_KEY = "quai_miners_room_donate_address";
 const IGNORE_VITE_MINERS_DONATE_KEY = "quai_miners_room_donate_ignore_vite";
-const LOCAL_GAME_MESSENGER_KEY = "quai_game_messenger_address";
 const DEFAULT_GAME_MESSENGER_ADDRESS =
   "0x006256089e9c0a8b5250f012889d7d844e7ff8c1";
 
@@ -112,26 +111,10 @@ export function getGameMessengerAddress() {
   if (fromEnv) {
     return fromEnv;
   }
-
-  try {
-    const fromStorage = localStorage.getItem(LOCAL_GAME_MESSENGER_KEY)?.trim();
-    if (fromStorage) {
-      return fromStorage;
-    }
-  } catch {
-    // ignore
-  }
   return DEFAULT_GAME_MESSENGER_ADDRESS;
 }
 
 export function setGameMessengerAddress(address) {
-  try {
-    if (address) {
-      localStorage.setItem(LOCAL_GAME_MESSENGER_KEY, address);
-    } else {
-      localStorage.removeItem(LOCAL_GAME_MESSENGER_KEY);
-    }
-  } catch {
-    // ignore
-  }
+  // Shared global chat must always use one env/default contract.
+  void address;
 }

@@ -6,7 +6,6 @@ import {
   getMinersRoomDonateAddress,
   setMinersRoomDonateAddress,
   getGameMessengerAddress,
-  setGameMessengerAddress,
 } from "./contractConfig.js";
 import {
   getPelagusEip1193,
@@ -26,7 +25,6 @@ import {
 import {
   GAME_MESSENGER_GLOBAL_ROOM,
   assertMessengerContractReadable,
-  deployGameMessenger,
   postMessage,
   readRecentMessages,
   walletRoomKey,
@@ -80,7 +78,6 @@ let commitInFlight = false;
 let deployInFlight = false;
 let deployDonateInFlight = false;
 let donateInFlight = false;
-let deployMessengerInFlight = false;
 let chatSendInFlight = false;
 let chatPollTimerId = null;
 let activeChatRoom = "global";
@@ -376,20 +373,11 @@ function updateUI() {
       donateInFlight ||
       deployDonateInFlight ||
       commitInFlight ||
-      deployMessengerInFlight ||
       chatSendInFlight;
   }
 
   if (chatDeployBtn) {
-    chatDeployBtn.disabled =
-      !account ||
-      Boolean(messengerAddr) ||
-      deployInFlight ||
-      donateInFlight ||
-      deployDonateInFlight ||
-      commitInFlight ||
-      deployMessengerInFlight ||
-      chatSendInFlight;
+    chatDeployBtn.hidden = true;
   }
 
   if (chatPanel) {
@@ -621,7 +609,7 @@ async function loadChatMessages() {
 }
 
 async function onSendChatMessage() {
-  if (!account || !chatInputHasText() || chatSendInFlight || deployMessengerInFlight) {
+  if (!account || !chatInputHasText() || chatSendInFlight) {
     return;
   }
 
@@ -670,61 +658,6 @@ async function onSendChatMessage() {
     }
   } finally {
     chatSendInFlight = false;
-    updateUI();
-  }
-}
-
-async function onDeployChatContract() {
-  if (!account || deployMessengerInFlight) {
-    return;
-  }
-  const provider = getWallet();
-  if (!provider) {
-    if (chatStatus) {
-      chatStatus.textContent = "Wallet not found";
-    }
-    return;
-  }
-
-  deployMessengerInFlight = true;
-  if (chatStatus) {
-    chatStatus.textContent = "Deploying chat contract in wallet…";
-  }
-  updateUI();
-  try {
-    await ensureActiveQuaiChain(provider);
-    const existingAddr = getGameMessengerAddress();
-    if (existingAddr) {
-      try {
-        await assertMessengerContractReadable(provider, existingAddr);
-        if (chatStatus) {
-          chatStatus.textContent = `Chat contract already valid: ${shortenAddress(existingAddr)}`;
-        }
-        return;
-      } catch {
-        // Existing address is invalid for current zone; deploy a new one below.
-      }
-    }
-
-    const addr = await deployGameMessenger(provider);
-    await assertMessengerContractReadable(provider, addr);
-    setGameMessengerAddress(addr);
-    if (chatStatus) {
-      chatStatus.textContent = `Chat contract deployed: ${shortenAddress(addr)}`;
-    }
-    try {
-      await navigator.clipboard.writeText(addr);
-    } catch {
-      // ignore
-    }
-    await loadChatMessages();
-  } catch (error) {
-    if (chatStatus) {
-      const msg = error?.shortMessage || error?.message || "Deploy failed";
-      chatStatus.textContent = msg.length > 120 ? `${msg.slice(0, 117)}…` : msg;
-    }
-  } finally {
-    deployMessengerInFlight = false;
     updateUI();
   }
 }
@@ -1044,7 +977,6 @@ async function init() {
     updateUI();
   });
   chatSendBtn?.addEventListener("click", onSendChatMessage);
-  chatDeployBtn?.addEventListener("click", onDeployChatContract);
   chatToggleBtn?.addEventListener("click", () => {
     isChatCollapsed = !isChatCollapsed;
     saveChatUiPrefs();
