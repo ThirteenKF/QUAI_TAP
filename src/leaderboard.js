@@ -4,6 +4,7 @@ import { QUAI_RPC_URL, getTapCounterAddress } from "./contractConfig.js";
 
 const leaderboardList = document.getElementById("leaderboardList");
 const TAPS_PER_TICKET = 10n;
+const MAX_BLOCK_RANGE = 10_000n;
 const TEN_TAPS_COMMITTED_TOPIC =
   "0x6cfbb6b5dda8a561b6c2f7d1f7322004391578f045de6b7e97052ad1674cceab";
 
@@ -38,44 +39,56 @@ async function fetchOnchainLeaderboard() {
     return [];
   }
 
-  const payload = {
-    jsonrpc: "2.0",
-    id: Date.now(),
-    method: "eth_getLogs",
-    params: [
-      {
-        address: contractAddress,
-        fromBlock: "0x0",
-        toBlock: "latest",
-        topics: [TEN_TAPS_COMMITTED_TOPIC],
-      },
-    ],
+  const rpcCall = async (method, params) => {
+    const payload = {
+      jsonrpc: "2.0",
+      id: Date.now(),
+      method,
+      params,
+    };
+
+    const response = await fetch(QUAI_RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`RPC error ${response.status}`);
+    }
+    const json = await response.json();
+    if (json?.error) {
+      throw new Error(String(json.error.message || "RPC method failed"));
+    }
+    return json?.result;
   };
 
-  const response = await fetch(QUAI_RPC_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    throw new Error(`RPC error ${response.status}`);
-  }
-
-  const json = await response.json();
-  const logs = Array.isArray(json?.result) ? json.result : [];
+  const latestHex = await rpcCall("eth_blockNumber", []);
+  const latest = parseBigIntHex(latestHex);
   const byWallet = new Map();
 
-  for (const log of logs) {
-    const wallet = topicToAddress(log?.topics?.[1]);
-    if (!wallet) {
-      continue;
+  for (let from = 0n; from <= latest; from += MAX_BLOCK_RANGE) {
+    const to = from + MAX_BLOCK_RANGE - 1n > latest ? latest : from + MAX_BLOCK_RANGE - 1n;
+    const logs = await rpcCall("eth_getLogs", [
+      {
+        address: contractAddress,
+        fromBlock: `0x${from.toString(16)}`,
+        toBlock: `0x${to.toString(16)}`,
+        topics: [TEN_TAPS_COMMITTED_TOPIC],
+      },
+    ]);
+    const safeLogs = Array.isArray(logs) ? logs : [];
+    for (const log of safeLogs) {
+      const wallet = topicToAddress(log?.topics?.[1]);
+      if (!wallet) {
+        continue;
+      }
+      const newTotal = parseBigIntHex(log?.data);
+      const tickets = Number(newTotal / TAPS_PER_TICKET);
+      if (!Number.isFinite(tickets) || tickets <= 0) {
+        continue;
+      }
+      byWallet.set(wallet, tickets);
     }
-    const newTotal = parseBigIntHex(log?.data);
-    const tickets = Number(newTotal / TAPS_PER_TICKET);
-    if (!Number.isFinite(tickets) || tickets <= 0) {
-      continue;
-    }
-    byWallet.set(wallet, tickets);
   }
 
   return [...byWallet.entries()]
