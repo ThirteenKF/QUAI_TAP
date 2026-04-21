@@ -40,32 +40,26 @@
             <span class="earn-reel" id="cell-12">🍇</span>
             <span class="earn-reel" id="cell-13">⭐</span>
             <span class="earn-reel earn-reel--quai" id="cell-14">Q</span>
+            <canvas id="fruitLinesCanvas" class="earn-lines-canvas" aria-hidden="true"></canvas>
           </div>
 
           <div class="earn-paytable">
-            <span>🍒🍒🍒🍒🍒 x16</span>
-            <span>🍋🍋🍋🍋🍋 x20</span>
-            <span>🍊🍊🍊🍊🍊 x24</span>
-            <span>🍇🍇🍇🍇🍇 x30</span>
-            <span>🍉🍉🍉🍉🍉 x42</span>
-            <span>🔔🔔🔔🔔🔔 x70</span>
-            <span>⭐⭐⭐⭐⭐ x120</span>
-            <span>QQQQQ x180</span>
+            <span>Line win checks both ways</span>
+            <span>3/4/5 symbols pay on active lines</span>
+            <span>QQQ x35 · QQQQ x70 · QQQQQ x180</span>
+            <span>🍓 scatter: 3/4/5 anywhere</span>
           </div>
 
           <div class="earn-controls">
-            <label class="earn-bet-row" for="fruitBet">
-              <span>Bet</span>
-              <input id="fruitBet" class="earn-bet-input" type="number" min="1" max="200" value="10" />
-            </label>
-            <label class="earn-bet-row" for="fruitAutoCount">
-              <span>Auto spins</span>
-              <input id="fruitAutoCount" class="earn-bet-input" type="number" min="5" max="200" value="25" />
-            </label>
-            <label class="earn-bet-row" for="fruitLines">
-              <span>Lines</span>
-              <input id="fruitLines" class="earn-bet-input" type="number" min="1" max="10" value="10" />
-            </label>
+            <div class="earn-bet-row">
+              <button id="fruitBetCycle" class="earn-cycle-btn" type="button">Bet: 10</button>
+            </div>
+            <div class="earn-bet-row">
+              <button id="fruitAutoCycle" class="earn-cycle-btn" type="button">Auto spins: 25</button>
+            </div>
+            <div class="earn-bet-row">
+              <button id="fruitLinesCycle" class="earn-cycle-btn" type="button">Lines: 1</button>
+            </div>
           </div>
 
           <div class="earn-actions">
