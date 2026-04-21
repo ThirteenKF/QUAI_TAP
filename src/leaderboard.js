@@ -1,6 +1,7 @@
 import "./style.css";
 import { loadLeaderboard } from "./lib/leaderboardStore.js";
 import { QUAI_RPC_URL, getTapCounterAddress } from "./contractConfig.js";
+import { initChatWidget } from "./lib/chatWidget.js";
 
 const leaderboardList = document.getElementById("leaderboardList");
 const TAPS_PER_TICKET = 10n;
@@ -222,3 +223,4 @@ async function initLeaderboard() {
 }
 
 initLeaderboard();
+initChatWidget();

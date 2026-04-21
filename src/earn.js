@@ -1,4 +1,5 @@
 import "./style.css";
+import { initChatWidget } from "./lib/chatWidget.js";
 
 const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐", "Q"];
 const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120, Q: 180 };
@@ -315,3 +316,4 @@ linesEl?.addEventListener("input", () => {
 });
 
 updateUi();
+initChatWidget();
