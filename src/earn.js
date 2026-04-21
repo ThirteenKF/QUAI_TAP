@@ -1,12 +1,40 @@
 import "./style.css";
 import { initChatWidget } from "./lib/chatWidget.js";
 
-const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐", "Q", "🍓"];
-const PAY_3 = { "🍒": 4, "🍋": 5, "🍊": 6, "🍇": 7, "🍉": 10, "🔔": 14, "⭐": 20, Q: 35 };
-const PAY_4 = { "🍒": 8, "🍋": 10, "🍊": 12, "🍇": 14, "🍉": 20, "🔔": 30, "⭐": 45, Q: 70 };
-const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120, Q: 180 };
+const SYMBOLS = ["🍒", "🍋", "🍎", "🍐", "🍉", "🍸", "🎰", "🍑", "🍓"];
+const WILD_SYMBOL = "🍸";
+const LOGO_SYMBOL = "🎰";
 const SCATTER_SYMBOL = "🍓";
-const SCATTER_PAYS = { 3: 20, 4: 60, 5: 200 };
+const BONUS_CENTER_SYMBOLS = ["🍒", "🍋", "🍎", "🍐", "🍉", "🍑"];
+const BONUS_RING = [
+  "🍒",
+  "🍑",
+  "🍋",
+  "EXIT",
+  "🍎",
+  "🍐",
+  "🍉",
+  "EXIT",
+  "🍒",
+  "🍑",
+  "🍋",
+  "EXIT",
+  "🍎",
+  "🍐",
+  "🍉",
+  "EXIT",
+];
+const BONUS_MULTIPLIERS = {
+  "🍒": 2,
+  "🍑": 3,
+  "🍋": 5,
+  "🍎": 10,
+  "🍐": 20,
+  "🍉": 100,
+};
+const PAY_3 = { "🎰": 200, "🍸": 100, "🍉": 30, "🍐": 20, "🍎": 10, "🍋": 5, "🍑": 3, "🍒": 2 };
+const PAY_4 = { "🎰": 1000, "🍸": 500, "🍉": 100, "🍐": 50, "🍎": 30, "🍋": 10, "🍑": 5, "🍒": 3 };
+const PAY_5 = { "🎰": 5000, "🍸": 2000, "🍉": 500, "🍐": 200, "🍎": 100, "🍋": 50, "🍑": 20, "🍒": 10 };
 const PAYLINES = [
   [1, 1, 1, 1, 1], // center
   [0, 0, 0, 0, 0], // top
@@ -26,6 +54,7 @@ const NORMAL_TOTAL_MS = 900;
 const TURBO_STEP_MS = 35;
 const TURBO_TOTAL_MS = 360;
 const LINES_OPTIONS = [1, 3, 5, 7, 9];
+const BET_OPTIONS = [1, 2, 3, 4, 5, 10, 20, 25];
 const ACTIVE_LINE_INDEXES = {
   1: [0],
   3: [0, 1, 2],
@@ -37,15 +66,28 @@ const ACTIVE_LINE_INDEXES = {
 const balanceEl = document.getElementById("fruitBalance");
 const lastWinEl = document.getElementById("fruitLastWin");
 const statusEl = document.getElementById("fruitStatus");
+const combosEl = document.getElementById("fruitCombos");
 const betCycleBtn = document.getElementById("fruitBetCycle");
 const autoCycleBtn = document.getElementById("fruitAutoCycle");
 const linesCycleBtn = document.getElementById("fruitLinesCycle");
+const riskBtn = document.getElementById("fruitRiskBtn");
 const spinBtn = document.getElementById("fruitSpinBtn");
 const autoBtn = document.getElementById("fruitAutoBtn");
 const soundBtn = document.getElementById("fruitSoundBtn");
 const turboBtn = document.getElementById("fruitTurboBtn");
 const reelsWrapEl = document.getElementById("fruitReels");
 const linesCanvasEl = document.getElementById("fruitLinesCanvas");
+const riskModal = document.getElementById("riskModal");
+const riskDealerEl = document.getElementById("riskDealer");
+const riskStatusEl = document.getElementById("riskStatus");
+const riskCardsEl = document.getElementById("riskCards");
+const riskCloseBtn = document.getElementById("riskCloseBtn");
+const bonusModal = document.getElementById("bonusModal");
+const bonusLivesEl = document.getElementById("bonusLives");
+const bonusCenterEl = document.getElementById("bonusCenter");
+const bonusRingEl = document.getElementById("bonusRing");
+const bonusSpinBtn = document.getElementById("bonusSpinBtn");
+const bonusCloseBtn = document.getElementById("bonusCloseBtn");
 const reelEls = Array.from({ length: REELS * ROWS }, (_, idx) =>
   document.getElementById(`cell-${idx}`),
 );
@@ -59,21 +101,25 @@ let autoLeft = 0;
 let soundEnabled = true;
 let turboEnabled = false;
 let audioCtx = null;
-let betValue = 10;
-let autoCountValue = 25;
+let betValue = 1;
+let autoCountValue = 0;
 let linesValue = 1;
 let linesPreviewTimerId = null;
+let lastWinningCombos = [];
+let lastRoundWin = 0;
+let bonusLives = 0;
+let bonusSpinInFlight = false;
 
 function randomSymbol() {
   return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
 }
 
 function parseBet() {
-  return Math.max(1, Math.min(200, Math.floor(Number(betValue) || 0)));
+  return Number(betValue) || 1;
 }
 
 function parseAutoCount() {
-  return Math.max(5, Math.min(200, Math.floor(Number(autoCountValue) || 25)));
+  return Math.max(0, Math.min(100, Math.floor(Number(autoCountValue) || 0)));
 }
 
 function parseLines() {
@@ -133,7 +179,14 @@ function calcLineWin(line, grid, betPerLine) {
     }
     let count = 1;
     for (let r = reelStart + step; r >= 0 && r < REELS; r += step) {
-      if (getCell(grid, r, line[r]) === first) {
+      const next = getCell(grid, r, line[r]);
+      // Wild substitutes fruits but not logo/scatter.
+      const canWildSub =
+        first !== LOGO_SYMBOL &&
+        first !== SCATTER_SYMBOL &&
+        (next === WILD_SYMBOL || next === first);
+      const strictMatch = next === first;
+      if (strictMatch || canWildSub) {
         count += 1;
       } else {
         break;
@@ -151,32 +204,166 @@ function calcLineWin(line, grid, betPerLine) {
 
   const left = countFrom(true);
   const right = countFrom(false);
-  // Igrosoft-like behavior: each direction is checked independently.
-  return payoutFor(left.symbol, left.count) + payoutFor(right.symbol, right.count);
+  const combos = [];
+  const leftPay = payoutFor(left.symbol, left.count);
+  if (leftPay > 0) {
+    combos.push({
+      symbol: left.symbol,
+      count: left.count,
+      direction: "L→R",
+      payout: leftPay,
+    });
+  }
+  const rightPay = payoutFor(right.symbol, right.count);
+  if (rightPay > 0) {
+    combos.push({
+      symbol: right.symbol,
+      count: right.count,
+      direction: "R→L",
+      payout: rightPay,
+    });
+  }
+  return combos;
 }
 
 function calcWin(grid, totalBet, linesCount) {
   const activeIndexes = ACTIVE_LINE_INDEXES[linesCount] || ACTIVE_LINE_INDEXES[1];
   const betPerLine = Math.max(1, Math.floor(totalBet / activeIndexes.length));
   let sum = 0;
+  const combos = [];
   for (const lineIdx of activeIndexes) {
     const line = PAYLINES[lineIdx];
     if (!line) {
       continue;
     }
-    sum += calcLineWin(line, grid, betPerLine);
+    const lineCombos = calcLineWin(line, grid, betPerLine);
+    for (const combo of lineCombos) {
+      combos.push({ ...combo, line: lineIdx + 1 });
+      sum += combo.payout;
+    }
   }
-  // Scatter payout works regardless of active line geometry.
-  const scatterCount = grid.reduce(
-    (acc, symbol) => (symbol === SCATTER_SYMBOL ? acc + 1 : acc),
-    0,
-  );
-  const scatterMult =
-    scatterCount >= 5 ? SCATTER_PAYS[5] : scatterCount >= 4 ? SCATTER_PAYS[4] : scatterCount >= 3 ? SCATTER_PAYS[3] : 0;
-  if (scatterMult > 0) {
-    sum += scatterMult * betPerLine;
+  return { total: sum, combos };
+}
+
+function drawRiskCards() {
+  if (!riskCardsEl) return;
+  const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+  const dealer = values[Math.floor(Math.random() * values.length)];
+  if (riskDealerEl) riskDealerEl.textContent = `Dealer: ${dealer}`;
+  if (riskStatusEl) riskStatusEl.textContent = "Choose one closed card.";
+  riskCardsEl.innerHTML = "";
+  for (let i = 0; i < 4; i += 1) {
+    const v = values[Math.floor(Math.random() * values.length)];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "earn-cycle-btn";
+    btn.textContent = "?";
+    btn.addEventListener("click", () => {
+      btn.textContent = String(v);
+      if (v > dealer) {
+        lastRoundWin *= 2;
+        balance += lastRoundWin;
+        if (riskStatusEl) riskStatusEl.textContent = `Win! x2 -> +${lastRoundWin}`;
+      } else if (v < dealer) {
+        if (riskStatusEl) riskStatusEl.textContent = "Lose! Round win burned.";
+        lastRoundWin = 0;
+      } else if (riskStatusEl) {
+        riskStatusEl.textContent = "Tie. Try again.";
+      }
+      updateUi();
+    });
+    riskCardsEl.append(btn);
   }
-  return sum;
+}
+
+function openRisk() {
+  if (!riskModal || lastRoundWin <= 0) {
+    if (statusEl) statusEl.textContent = "Need a win first to use Risk.";
+    return;
+  }
+  riskModal.hidden = false;
+  drawRiskCards();
+}
+
+function closeRisk() {
+  if (riskModal) riskModal.hidden = true;
+}
+
+function openBonus(scatterCount, totalBet) {
+  if (!bonusModal) return;
+  bonusLives = scatterCount >= 5 ? 3 : scatterCount >= 4 ? 2 : 1;
+  if (bonusLivesEl) bonusLivesEl.textContent = `Lives: ${bonusLives}`;
+  const bonusCenterSymbols = [
+    BONUS_CENTER_SYMBOLS[Math.floor(Math.random() * BONUS_CENTER_SYMBOLS.length)],
+    BONUS_CENTER_SYMBOLS[Math.floor(Math.random() * BONUS_CENTER_SYMBOLS.length)],
+    BONUS_CENTER_SYMBOLS[Math.floor(Math.random() * BONUS_CENTER_SYMBOLS.length)],
+  ];
+  if (bonusCenterEl) bonusCenterEl.textContent = bonusCenterSymbols.join(" ");
+  if (bonusRingEl) {
+    bonusRingEl.innerHTML = "";
+    for (const s of BONUS_RING) {
+      const n = document.createElement("span");
+      n.className = "earn-combos__item";
+      n.textContent = s;
+      bonusRingEl.append(n);
+    }
+  }
+  bonusModal.hidden = false;
+  if (!bonusSpinBtn) {
+    return;
+  }
+  bonusSpinBtn.onclick = async () => {
+    if (bonusSpinInFlight || !bonusRingEl) {
+      return;
+    }
+    bonusSpinInFlight = true;
+    bonusSpinBtn.disabled = true;
+
+    const ringItems = Array.from(bonusRingEl.children);
+    let pointer = Math.floor(Math.random() * BONUS_RING.length);
+    const hops = 18 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < hops; i += 1) {
+      pointer = (pointer + 1) % BONUS_RING.length;
+      ringItems.forEach((el) => el.classList.remove("earn-combos__item--active"));
+      ringItems[pointer]?.classList.add("earn-combos__item--active");
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(45 + i * 3);
+    }
+
+    const landed = BONUS_RING[pointer];
+    if (landed === "EXIT") {
+      bonusLives -= 1;
+      if (bonusLivesEl) bonusLivesEl.textContent = `Lives: ${bonusLives}`;
+      if (statusEl) statusEl.textContent = `Bonus hit EXIT. Lives left: ${bonusLives}`;
+      if (bonusLives <= 0) {
+        bonusModal.hidden = true;
+      }
+    } else {
+      const matched = bonusCenterSymbols.includes(landed);
+      if (matched) {
+        const mult = BONUS_MULTIPLIERS[landed] || 2;
+        const gain = totalBet * mult;
+        balance += gain;
+        if (statusEl) statusEl.textContent = `Bonus ${landed} x${mult}: +${gain}`;
+      } else if (statusEl) {
+        statusEl.textContent = `Bonus missed (${landed}). Spin again or exit.`;
+      }
+      updateUi();
+    }
+
+    bonusSpinInFlight = false;
+    bonusSpinBtn.disabled = false;
+  };
+}
+
+function closeBonus() {
+  if (bonusModal) {
+    bonusModal.hidden = true;
+  }
+  bonusSpinInFlight = false;
+  if (bonusSpinBtn) {
+    bonusSpinBtn.disabled = false;
+  }
 }
 
 function sleep(ms) {
@@ -190,7 +377,6 @@ function renderGrid(grid) {
     if (el) {
       const symbol = grid[idx];
       el.textContent = symbol;
-      el.classList.toggle("earn-reel--quai", symbol === "Q");
     }
   });
 }
@@ -309,27 +495,34 @@ function updateUi() {
   if (spinBtn) {
     spinBtn.disabled = blocked;
   }
-  if (autoBtn) {
-    autoBtn.disabled = spinInFlight;
-    autoBtn.textContent = autoEnabled ? `Auto: ON (${autoLeft})` : "Auto: OFF";
-  }
-  if (soundBtn) {
-    soundBtn.textContent = `Sound: ${soundEnabled ? "ON" : "OFF"}`;
-  }
-  if (turboBtn) {
-    turboBtn.textContent = `Turbo: ${turboEnabled ? "ON" : "OFF"}`;
+  if (riskBtn) {
+    riskBtn.disabled = spinInFlight || lastRoundWin <= 0;
   }
   if (betCycleBtn) {
     betCycleBtn.textContent = `Bet: ${bet}`;
     betCycleBtn.title = "Tap to change";
   }
-  if (autoCycleBtn) {
-    autoCycleBtn.textContent = `Auto spins: ${parseAutoCount()}`;
-    autoCycleBtn.title = "Tap to change";
-  }
   if (linesCycleBtn) {
-    linesCycleBtn.textContent = `Lines: ${lines}`;
+    linesCycleBtn.textContent = `${lines} Line${lines > 1 ? "s" : ""}`;
     linesCycleBtn.title = "Tap to change";
+  }
+  if (combosEl) {
+    if (!lastWinningCombos.length) {
+      combosEl.innerHTML =
+        '<li class="earn-combos__empty">Winning combinations will appear here</li>';
+    } else {
+      combosEl.innerHTML = "";
+      for (const combo of lastWinningCombos) {
+        const item = document.createElement("li");
+        item.className = "earn-combos__item";
+        if (combo.scatter) {
+          item.textContent = `${combo.symbol} scatter x${combo.count} = +${combo.payout}`;
+        } else {
+          item.textContent = `Line ${combo.line} · ${combo.symbol} x${combo.count} (${combo.direction}) = +${combo.payout}`;
+        }
+        combosEl.append(item);
+      }
+    }
   }
 }
 
@@ -360,25 +553,34 @@ async function spinOnce() {
   const grid = randomGrid();
   renderGrid(grid);
 
-  const win = calcWin(grid, totalBet, lines);
-  lastWin = win;
-  balance += win;
+  const winData = calcWin(grid, totalBet, lines);
+  lastWin = winData.total;
+  lastRoundWin = winData.total;
+  lastWinningCombos = winData.combos;
+  balance += winData.total;
   if (statusEl) {
     const scatterCount = grid.reduce(
       (acc, symbol) => (symbol === SCATTER_SYMBOL ? acc + 1 : acc),
       0,
     );
-    if (win > 0 && scatterCount >= 3) {
-      statusEl.textContent = `Win +${win}! Scatter x${scatterCount}`;
+    if (winData.total > 0 && scatterCount >= 3) {
+      statusEl.textContent = `Win +${winData.total}! Scatter x${scatterCount}`;
     } else {
-      statusEl.textContent = win > 0 ? `Win +${win}!` : "No win";
+      statusEl.textContent = winData.total > 0 ? `Win +${winData.total}!` : "No win";
     }
   }
-  if (win > 0) {
+  if (winData.total > 0) {
     beep(740, 0.12, 0.055);
     beep(980, 0.15, 0.04);
   } else {
     beep(180, 0.08, 0.03);
+  }
+  const scatterCount = grid.reduce(
+    (acc, symbol) => (symbol === SCATTER_SYMBOL ? acc + 1 : acc),
+    0,
+  );
+  if (scatterCount >= 3) {
+    openBonus(scatterCount, totalBet);
   }
 
   spinInFlight = false;
@@ -426,7 +628,7 @@ autoBtn?.addEventListener("click", () => {
     stopAuto();
   } else {
     autoEnabled = true;
-    autoLeft = parseAutoCount();
+    autoLeft = Math.max(1, parseAutoCount());
   }
   if (autoEnabled && !spinInFlight) {
     void spinOnce();
@@ -449,11 +651,13 @@ turboBtn?.addEventListener("click", () => {
 });
 
 betCycleBtn?.addEventListener("click", () => {
-  betValue = parseBet() >= 25 ? 5 : parseBet() + 5;
+  const idx = BET_OPTIONS.indexOf(parseBet());
+  const next = idx >= 0 ? (idx + 1) % BET_OPTIONS.length : 0;
+  betValue = BET_OPTIONS[next];
   updateUi();
 });
 autoCycleBtn?.addEventListener("click", () => {
-  autoCountValue = parseAutoCount() >= 25 ? 5 : parseAutoCount() + 5;
+  autoCountValue = parseAutoCount() >= 25 ? 0 : parseAutoCount() + 5;
   updateUi();
 });
 linesCycleBtn?.addEventListener("click", () => {
@@ -463,6 +667,25 @@ linesCycleBtn?.addEventListener("click", () => {
   linesValue = LINES_OPTIONS[nextIdx];
   showPaylinesPreview();
   updateUi();
+});
+riskBtn?.addEventListener("click", openRisk);
+riskCloseBtn?.addEventListener("click", closeRisk);
+bonusCloseBtn?.addEventListener("click", closeBonus);
+bonusModal?.addEventListener("click", (event) => {
+  if (event.target === bonusModal) {
+    closeBonus();
+  }
+});
+riskModal?.addEventListener("click", (event) => {
+  if (event.target === riskModal) {
+    closeRisk();
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeBonus();
+    closeRisk();
+  }
 });
 
 updateUi();

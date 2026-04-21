@@ -1269,6 +1269,36 @@ a.corner-btn.corner-left:focus-visible {
   color: rgba(250, 250, 250, 0.86);
 }
 
+.earn-combos {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.earn-combos__item {
+  font-size: 11px;
+  color: #dbeafe;
+  text-align: left;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 8px;
+  padding: 4px 6px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.earn-combos__item--active {
+  border-color: rgba(56, 189, 248, 0.78);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+  background: rgba(14, 116, 144, 0.35);
+}
+
+.earn-combos__empty {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.7);
+  text-align: left;
+}
+
 .earn-controls {
   display: grid;
   gap: 8px;
@@ -1336,6 +1366,51 @@ a.corner-btn.corner-left:focus-visible {
   min-height: 1.2em;
   color: rgba(250, 250, 250, 0.9);
   font-size: 13px;
+}
+
+.earn-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.earn-modal[hidden] {
+  display: none;
+}
+
+.earn-modal__card {
+  width: min(92vw, 420px);
+  border-radius: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  background: rgba(15, 23, 42, 0.92);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.risk-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.bonus-center {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(2, 6, 23, 0.6);
+  font-size: 24px;
+}
+
+.bonus-ring {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 
 /* Лидерборд: прежняя карточка + полноэкранная оболочка */

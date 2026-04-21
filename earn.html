@@ -27,51 +27,74 @@
           <div class="earn-reels earn-reels--5x3" id="fruitReels" aria-live="polite">
             <span class="earn-reel" id="cell-0">🍒</span>
             <span class="earn-reel" id="cell-1">🍋</span>
-            <span class="earn-reel" id="cell-2">🍊</span>
-            <span class="earn-reel" id="cell-3">🍇</span>
+            <span class="earn-reel" id="cell-2">🍎</span>
+            <span class="earn-reel" id="cell-3">🍐</span>
             <span class="earn-reel" id="cell-4">🍉</span>
             <span class="earn-reel" id="cell-5">🍒</span>
-            <span class="earn-reel" id="cell-6">⭐</span>
-            <span class="earn-reel" id="cell-7">🍊</span>
+            <span class="earn-reel" id="cell-6">🍸</span>
+            <span class="earn-reel" id="cell-7">🎰</span>
             <span class="earn-reel" id="cell-8">🍋</span>
-            <span class="earn-reel" id="cell-9">🔔</span>
+            <span class="earn-reel" id="cell-9">🍓</span>
             <span class="earn-reel" id="cell-10">🍉</span>
             <span class="earn-reel" id="cell-11">🍒</span>
-            <span class="earn-reel" id="cell-12">🍇</span>
-            <span class="earn-reel" id="cell-13">⭐</span>
-            <span class="earn-reel earn-reel--quai" id="cell-14">Q</span>
+            <span class="earn-reel" id="cell-12">🍑</span>
+            <span class="earn-reel" id="cell-13">🍸</span>
+            <span class="earn-reel" id="cell-14">🎰</span>
             <canvas id="fruitLinesCanvas" class="earn-lines-canvas" aria-hidden="true"></canvas>
           </div>
 
           <div class="earn-paytable">
-            <span>Line win checks both ways</span>
-            <span>3/4/5 symbols pay on active lines</span>
-            <span>QQQ x35 · QQQQ x70 · QQQQQ x180</span>
-            <span>🍓 scatter: 3/4/5 anywhere</span>
+            <span>🎰: x200 / x1000 / x5000</span>
+            <span>🍸: x100 / x500 / x2000</span>
+            <span>🍉: x30 / x100 / x500 · 🍐: x20 / x50 / x200</span>
+            <span>🍎: x10 / x30 / x100 · 🍋: x5 / x10 / x50</span>
+            <span>🍑: x3 / x5 / x20 · 🍒: x2 / x3 / x10</span>
+            <span>🍓 3+ anywhere starts Bonus (no base payout)</span>
           </div>
+          <ul id="fruitCombos" class="earn-combos" aria-live="polite">
+            <li class="earn-combos__empty">Winning combinations will appear here</li>
+          </ul>
 
           <div class="earn-controls">
             <div class="earn-bet-row">
-              <button id="fruitBetCycle" class="earn-cycle-btn" type="button">Bet: 10</button>
+              <button id="fruitBetCycle" class="earn-cycle-btn" type="button">Bet: 1</button>
             </div>
             <div class="earn-bet-row">
-              <button id="fruitAutoCycle" class="earn-cycle-btn" type="button">Auto spins: 25</button>
-            </div>
-            <div class="earn-bet-row">
-              <button id="fruitLinesCycle" class="earn-cycle-btn" type="button">Lines: 1</button>
+              <button id="fruitLinesCycle" class="earn-cycle-btn" type="button">1 Line</button>
             </div>
           </div>
 
           <div class="earn-actions">
-            <button id="fruitSpinBtn" class="corner-btn corner-right" type="button">Spin</button>
-            <button id="fruitAutoBtn" class="corner-btn corner-left" type="button">Auto: OFF</button>
-            <button id="fruitSoundBtn" class="corner-btn corner-left" type="button">Sound: ON</button>
-            <button id="fruitTurboBtn" class="corner-btn corner-left" type="button">Turbo: OFF</button>
+            <button id="fruitSpinBtn" class="corner-btn corner-right" type="button">Start</button>
+            <button id="fruitRiskBtn" class="corner-btn corner-left" type="button">Risk</button>
           </div>
 
           <p id="fruitStatus" class="earn-status">Ready to spin.</p>
         </section>
 
+      </section>
+
+      <section id="riskModal" class="earn-modal" hidden aria-label="Risk game">
+        <div class="earn-modal__card">
+          <h3>Risk x2</h3>
+          <p id="riskStatus" class="earn-status">Choose one closed card.</p>
+          <p id="riskDealer" class="earn-status">Dealer: ?</p>
+          <div id="riskCards" class="risk-cards"></div>
+          <button id="riskCloseBtn" class="corner-btn corner-left" type="button">Close</button>
+        </div>
+      </section>
+
+      <section id="bonusModal" class="earn-modal" hidden aria-label="Bonus game">
+        <div class="earn-modal__card">
+          <h3>Bonus Game</h3>
+          <p id="bonusLives" class="earn-status">Lives: 1</p>
+          <div id="bonusCenter" class="bonus-center">🍒 🍋 🍉</div>
+          <div id="bonusRing" class="bonus-ring"></div>
+          <div class="earn-actions">
+            <button id="bonusSpinBtn" class="corner-btn corner-right" type="button">Bonus Spin</button>
+            <button id="bonusCloseBtn" class="corner-btn corner-left" type="button">Collect / Exit</button>
+          </div>
+        </div>
       </section>
 
       <section id="chatPanel" class="chat-panel" aria-label="On-chain chat">
