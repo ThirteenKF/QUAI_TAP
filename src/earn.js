@@ -1,9 +1,7 @@
 import "./style.css";
 
-const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐"];
-const PAY_3 = { "🍒": 4, "🍋": 5, "🍊": 6, "🍇": 7, "🍉": 10, "🔔": 14, "⭐": 20 };
-const PAY_4 = { "🍒": 8, "🍋": 10, "🍊": 12, "🍇": 14, "🍉": 20, "🔔": 30, "⭐": 45 };
-const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120 };
+const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐", "Q"];
+const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120, Q: 180 };
 const PAYLINES = [
   [1, 1, 1, 1, 1],
   [0, 0, 0, 0, 0],
@@ -122,8 +120,6 @@ function calcLineWin(line, grid, betPerLine) {
     }
   }
   if (count >= 5) return (PAY_5[first] || 0) * betPerLine;
-  if (count >= 4) return (PAY_4[first] || 0) * betPerLine;
-  if (count >= 3) return (PAY_3[first] || 0) * betPerLine;
   return 0;
 }
 
@@ -144,7 +140,11 @@ function sleep(ms) {
 
 function renderGrid(grid) {
   reelEls.forEach((el, idx) => {
-    if (el) el.textContent = grid[idx];
+    if (el) {
+      const symbol = grid[idx];
+      el.textContent = symbol;
+      el.classList.toggle("earn-reel--quai", symbol === "Q");
+    }
   });
 }
 
