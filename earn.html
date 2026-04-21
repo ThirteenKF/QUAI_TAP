@@ -15,7 +15,68 @@
     <main class="app app--fill">
       <section class="card" aria-label="Earn">
         <a class="corner-btn corner-left" href="/">Back</a>
-        <h1>Soon</h1>
+        <h1>Fruit Cocktail Deluxe</h1>
+        <p class="subtitle">Casino-style slot simulator</p>
+
+        <section class="earn-fruit" aria-label="Fruit Cocktail game">
+          <div class="earn-topline">
+            <p id="fruitBalance" class="earn-balance">Balance: 1000</p>
+            <p id="fruitLastWin" class="earn-last-win">Last win: 0</p>
+          </div>
+
+          <div class="earn-reels earn-reels--5x3" id="fruitReels" aria-live="polite">
+            <span class="earn-reel" id="cell-0">🍒</span>
+            <span class="earn-reel" id="cell-1">🍋</span>
+            <span class="earn-reel" id="cell-2">🍊</span>
+            <span class="earn-reel" id="cell-3">🍇</span>
+            <span class="earn-reel" id="cell-4">🍉</span>
+            <span class="earn-reel" id="cell-5">🍒</span>
+            <span class="earn-reel" id="cell-6">⭐</span>
+            <span class="earn-reel" id="cell-7">🍊</span>
+            <span class="earn-reel" id="cell-8">🍋</span>
+            <span class="earn-reel" id="cell-9">🔔</span>
+            <span class="earn-reel" id="cell-10">🍉</span>
+            <span class="earn-reel" id="cell-11">🍒</span>
+            <span class="earn-reel" id="cell-12">🍇</span>
+            <span class="earn-reel" id="cell-13">⭐</span>
+            <span class="earn-reel" id="cell-14">🍋</span>
+          </div>
+
+          <div class="earn-paytable">
+            <span>🍒🍒🍒 x5</span>
+            <span>🍋🍋🍋 x6</span>
+            <span>🍊🍊🍊 x7</span>
+            <span>🍇🍇🍇 x8</span>
+            <span>🍉🍉🍉 x10</span>
+            <span>🔔🔔🔔 x15</span>
+            <span>⭐⭐⭐ x25</span>
+            <span>Any two x2</span>
+          </div>
+
+          <div class="earn-controls">
+            <label class="earn-bet-row" for="fruitBet">
+              <span>Bet</span>
+              <input id="fruitBet" class="earn-bet-input" type="number" min="1" max="200" value="10" />
+            </label>
+            <label class="earn-bet-row" for="fruitAutoCount">
+              <span>Auto spins</span>
+              <input id="fruitAutoCount" class="earn-bet-input" type="number" min="5" max="200" value="25" />
+            </label>
+            <label class="earn-bet-row" for="fruitLines">
+              <span>Lines</span>
+              <input id="fruitLines" class="earn-bet-input" type="number" min="1" max="10" value="10" />
+            </label>
+          </div>
+
+          <div class="earn-actions">
+            <button id="fruitSpinBtn" class="corner-btn corner-right" type="button">Spin</button>
+            <button id="fruitAutoBtn" class="corner-btn corner-left" type="button">Auto: OFF</button>
+            <button id="fruitSoundBtn" class="corner-btn corner-left" type="button">Sound: ON</button>
+            <button id="fruitTurboBtn" class="corner-btn corner-left" type="button">Turbo: OFF</button>
+          </div>
+
+          <p id="fruitStatus" class="earn-status">Ready to spin.</p>
+        </section>
       </section>
     </main>
 
