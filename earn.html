@@ -13,9 +13,9 @@
   </head>
   <body>
     <main class="app app--fill">
-      <section class="card earn-card" aria-label="Earn">
+      <section class="card" aria-label="Earn">
         <a class="corner-btn corner-left" href="/">Back</a>
-        <h1 class="earn-title">Fruit Cocktail Deluxe</h1>
+        <h1>Fruit Cocktail Deluxe</h1>
         <p class="subtitle">Casino-style slot simulator</p>
 
         <section class="earn-fruit" aria-label="Fruit Cocktail game">
@@ -27,104 +27,56 @@
           <div class="earn-reels earn-reels--5x3" id="fruitReels" aria-live="polite">
             <span class="earn-reel" id="cell-0">🍒</span>
             <span class="earn-reel" id="cell-1">🍋</span>
-            <span class="earn-reel" id="cell-2">🍎</span>
-            <span class="earn-reel" id="cell-3">🍐</span>
+            <span class="earn-reel" id="cell-2">🍊</span>
+            <span class="earn-reel" id="cell-3">🍇</span>
             <span class="earn-reel" id="cell-4">🍉</span>
             <span class="earn-reel" id="cell-5">🍒</span>
-            <span class="earn-reel" id="cell-6">🍸</span>
-            <span class="earn-reel" id="cell-7">🎰</span>
+            <span class="earn-reel" id="cell-6">⭐</span>
+            <span class="earn-reel" id="cell-7">🍊</span>
             <span class="earn-reel" id="cell-8">🍋</span>
-            <span class="earn-reel" id="cell-9">🍓</span>
+            <span class="earn-reel" id="cell-9">🔔</span>
             <span class="earn-reel" id="cell-10">🍉</span>
             <span class="earn-reel" id="cell-11">🍒</span>
-            <span class="earn-reel" id="cell-12">🍑</span>
-            <span class="earn-reel" id="cell-13">🍸</span>
-            <span class="earn-reel" id="cell-14">🎰</span>
-            <canvas id="fruitLinesCanvas" class="earn-lines-canvas" aria-hidden="true"></canvas>
+            <span class="earn-reel" id="cell-12">🍇</span>
+            <span class="earn-reel" id="cell-13">⭐</span>
+            <span class="earn-reel" id="cell-14">🍋</span>
           </div>
 
           <div class="earn-paytable">
-            <span>🎰: x200 / x1000 / x5000</span>
-            <span>🍸: x100 / x500 / x2000</span>
-            <span>🍉: x30 / x100 / x500 · 🍐: x20 / x50 / x200</span>
-            <span>🍎: x10 / x30 / x100 · 🍋: x5 / x10 / x50</span>
-            <span>🍑: x3 / x5 / x20 · 🍒: x2 / x3 / x10</span>
-            <span>🍓 3+ anywhere starts Bonus (no base payout)</span>
+            <span>🍒🍒🍒 x5</span>
+            <span>🍋🍋🍋 x6</span>
+            <span>🍊🍊🍊 x7</span>
+            <span>🍇🍇🍇 x8</span>
+            <span>🍉🍉🍉 x10</span>
+            <span>🔔🔔🔔 x15</span>
+            <span>⭐⭐⭐ x25</span>
+            <span>Any two x2</span>
           </div>
-          <ul id="fruitCombos" class="earn-combos" aria-live="polite">
-            <li class="earn-combos__empty">Winning combinations will appear here</li>
-          </ul>
 
           <div class="earn-controls">
-            <div class="earn-bet-row">
-              <button id="fruitBetCycle" class="earn-cycle-btn" type="button">Bet: 1</button>
-            </div>
-            <div class="earn-bet-row">
-              <button id="fruitLinesCycle" class="earn-cycle-btn" type="button">1 Line</button>
-            </div>
+            <label class="earn-bet-row" for="fruitBet">
+              <span>Bet</span>
+              <input id="fruitBet" class="earn-bet-input" type="number" min="1" max="200" value="10" />
+            </label>
+            <label class="earn-bet-row" for="fruitAutoCount">
+              <span>Auto spins</span>
+              <input id="fruitAutoCount" class="earn-bet-input" type="number" min="5" max="200" value="25" />
+            </label>
+            <label class="earn-bet-row" for="fruitLines">
+              <span>Lines</span>
+              <input id="fruitLines" class="earn-bet-input" type="number" min="1" max="10" value="10" />
+            </label>
           </div>
 
           <div class="earn-actions">
-            <button id="fruitSpinBtn" class="corner-btn corner-right" type="button">Start</button>
-            <button id="fruitRiskBtn" class="corner-btn corner-left" type="button">Risk</button>
+            <button id="fruitSpinBtn" class="corner-btn corner-right" type="button">Spin</button>
+            <button id="fruitAutoBtn" class="corner-btn corner-left" type="button">Auto: OFF</button>
+            <button id="fruitSoundBtn" class="corner-btn corner-left" type="button">Sound: ON</button>
+            <button id="fruitTurboBtn" class="corner-btn corner-left" type="button">Turbo: OFF</button>
           </div>
 
           <p id="fruitStatus" class="earn-status">Ready to spin.</p>
         </section>
-
-      </section>
-
-      <section id="riskModal" class="earn-modal" hidden aria-label="Risk game">
-        <div class="earn-modal__card">
-          <h3>Risk x2</h3>
-          <p id="riskStatus" class="earn-status">Choose one closed card.</p>
-          <p id="riskDealer" class="earn-status">Dealer: ?</p>
-          <div id="riskCards" class="risk-cards"></div>
-          <button id="riskCloseBtn" class="corner-btn corner-left" type="button">Close</button>
-        </div>
-      </section>
-
-      <section id="bonusModal" class="earn-modal" hidden aria-label="Bonus game">
-        <div class="earn-modal__card">
-          <h3>Bonus Game</h3>
-          <p id="bonusLives" class="earn-status">Lives: 1</p>
-          <div id="bonusCenter" class="bonus-center">🍒 🍋 🍉</div>
-          <div id="bonusRing" class="bonus-ring"></div>
-          <div class="earn-actions">
-            <button id="bonusSpinBtn" class="corner-btn corner-right" type="button">Bonus Spin</button>
-            <button id="bonusCloseBtn" class="corner-btn corner-left" type="button">Collect / Exit</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="chatPanel" class="chat-panel" aria-label="On-chain chat">
-        <div class="chat-panel__head">
-          <h2 class="chat-panel__title">On-chain chat</h2>
-          <div class="chat-panel__head-right">
-            <button id="chatToggleBtn" class="chat-toggle-btn" type="button" aria-label="Collapse chat">▾</button>
-          </div>
-        </div>
-        <div id="chatPanelBody" class="chat-panel__body">
-          <div class="chat-tabs">
-            <button id="chatTabGlobal" class="chat-tab chat-tab--active" type="button">Global</button>
-            <button id="chatTabRoom" class="chat-tab" type="button" disabled>My Room</button>
-          </div>
-          <ul id="chatMessages" class="chat-messages" aria-live="polite"></ul>
-          <p id="chatStatus" class="chat-status"></p>
-          <div class="chat-compose">
-            <input
-              id="chatInput"
-              class="chat-input"
-              type="text"
-              maxlength="180"
-              placeholder="Message (on-chain fee applies)"
-            />
-            <button id="chatSendBtn" class="chat-send-btn" type="button" disabled>
-              Send
-            </button>
-          </div>
-          <p id="chatContractHint" class="chat-panel__hint"></p>
-        </div>
       </section>
     </main>
 
