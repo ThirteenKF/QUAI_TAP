@@ -1150,9 +1150,15 @@ a.corner-btn.corner-left:focus-visible {
   padding: 14px;
   position: relative;
   border-radius: 12px;
-  border: 1px solid rgba(220, 38, 38, 0.24);
-  background: rgba(10, 10, 10, 0.22);
-  backdrop-filter: blur(5px);
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(14, 165, 233, 0.18), transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(220, 38, 38, 0.2), transparent 45%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(2, 6, 23, 0.82) 100%);
+  box-shadow:
+    0 10px 30px rgba(2, 6, 23, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
 }
 
 .earn-sound-btn {
@@ -1246,6 +1252,15 @@ a.corner-btn.corner-left:focus-visible {
   gap: 8px;
 }
 
+.earn-actions #wheelSpinBtn {
+  grid-column: 1 / -1;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  background: linear-gradient(145deg, #06b6d4 0%, #3b82f6 55%, #6366f1 100%);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.35);
+}
+
 .earn-status {
   margin: 10px 0 0;
   min-height: 1.2em;
@@ -1265,6 +1280,7 @@ a.corner-btn.corner-left:focus-visible {
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
+  filter: drop-shadow(0 10px 24px rgba(2, 6, 23, 0.55));
 }
 
 .wheel-pointer {
@@ -1277,8 +1293,8 @@ a.corner-btn.corner-left:focus-visible {
   border-left: 12px solid transparent;
   border-right: 12px solid transparent;
   border-top: 0;
-  border-bottom: 24px solid #f5f5f5;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  border-bottom: 24px solid #e2e8f0;
+  filter: drop-shadow(0 2px 6px rgba(2, 6, 23, 0.75));
   z-index: 2;
 }
 

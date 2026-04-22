@@ -6,7 +6,7 @@ const spinBtn = document.getElementById("wheelSpinBtn");
 const statusEl = document.getElementById("wheelStatus");
 
 const SECTORS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const COLORS = ["#ff1c1c", "#f1f1f1"];
+const COLORS = ["#dc2626", "#0ea5e9"];
 const FULL_CIRCLE = Math.PI * 2;
 const SECTOR_ANGLE = FULL_CIRCLE / SECTORS.length;
 
@@ -25,6 +25,14 @@ function drawWheel(angle) {
   const innerR = outerR * 0.42;
 
   ctx.clearRect(0, 0, width, height);
+  const glow = ctx.createRadialGradient(cx, cy, innerR * 0.2, cx, cy, outerR * 1.1);
+  glow.addColorStop(0, "rgba(14,165,233,0.22)");
+  glow.addColorStop(0.6, "rgba(220,38,38,0.16)");
+  glow.addColorStop(1, "rgba(2,6,23,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR * 1.15, 0, FULL_CIRCLE);
+  ctx.fill();
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(angle);
@@ -37,10 +45,23 @@ function drawWheel(angle) {
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, outerR, start, end);
     ctx.closePath();
-    ctx.fillStyle = COLORS[i % 2];
+    const segGradient = ctx.createLinearGradient(
+      Math.cos(start) * outerR,
+      Math.sin(start) * outerR,
+      Math.cos(end) * outerR,
+      Math.sin(end) * outerR,
+    );
+    if (i % 2 === 0) {
+      segGradient.addColorStop(0, "#ef4444");
+      segGradient.addColorStop(1, "#991b1b");
+    } else {
+      segGradient.addColorStop(0, "#22d3ee");
+      segGradient.addColorStop(1, "#1d4ed8");
+    }
+    ctx.fillStyle = segGradient;
     ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = "rgba(2,6,23,0.9)";
     ctx.stroke();
 
     const mid = start + SECTOR_ANGLE / 2;
@@ -49,7 +70,7 @@ function drawWheel(angle) {
     ctx.save();
     ctx.translate(tx, ty);
     ctx.rotate(mid + Math.PI / 2);
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = "#f8fafc";
     ctx.font = "700 40px 'Bai Jamjuree', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -59,13 +80,16 @@ function drawWheel(angle) {
 
   ctx.beginPath();
   ctx.arc(0, 0, innerR, 0, FULL_CIRCLE);
-  ctx.fillStyle = "#0b0b0b";
+  const centerGradient = ctx.createRadialGradient(0, -innerR * 0.2, innerR * 0.1, 0, 0, innerR);
+  centerGradient.addColorStop(0, "#111827");
+  centerGradient.addColorStop(1, "#020617");
+  ctx.fillStyle = centerGradient;
   ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "#f5f5f5";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(125,211,252,0.85)";
   ctx.stroke();
-  ctx.fillStyle = "#f5f5f5";
-  ctx.font = "700 54px 'Bai Jamjuree', sans-serif";
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "700 48px 'Bai Jamjuree', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("SPIN", 0, 6);
