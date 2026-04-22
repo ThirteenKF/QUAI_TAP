@@ -1,9 +1,8 @@
 import "./style.css";
+import { initChatWidget } from "./lib/chatWidget.js";
 
-const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐"];
-const PAY_3 = { "🍒": 4, "🍋": 5, "🍊": 6, "🍇": 7, "🍉": 10, "🔔": 14, "⭐": 20 };
-const PAY_4 = { "🍒": 8, "🍋": 10, "🍊": 12, "🍇": 14, "🍉": 20, "🔔": 30, "⭐": 45 };
-const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120 };
+const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐", "Q"];
+const PAY_3 = { "🍒": 4, "🍋": 5, "🍊": 6, "🍇": 7, "🍉": 10, "🔔": 14, "⭐": 20, Q: 35 };
 const PAYLINES = [
   [1, 1, 1, 1, 1],
   [0, 0, 0, 0, 0],
@@ -112,18 +111,28 @@ function getCell(grid, reel, row) {
 }
 
 function calcLineWin(line, grid, betPerLine) {
-  const first = getCell(grid, 0, line[0]);
-  let count = 1;
-  for (let reel = 1; reel < REELS; reel += 1) {
-    if (getCell(grid, reel, line[reel]) === first) {
-      count += 1;
+  let streakSymbol = "";
+  let streakCount = 0;
+  let bestSymbol = "";
+  let bestCount = 0;
+
+  for (let reel = 0; reel < REELS; reel += 1) {
+    const symbol = getCell(grid, reel, line[reel]);
+    if (symbol === streakSymbol) {
+      streakCount += 1;
     } else {
-      break;
+      streakSymbol = symbol;
+      streakCount = 1;
+    }
+    if (streakCount > bestCount) {
+      bestCount = streakCount;
+      bestSymbol = streakSymbol;
     }
   }
-  if (count >= 5) return (PAY_5[first] || 0) * betPerLine;
-  if (count >= 4) return (PAY_4[first] || 0) * betPerLine;
-  if (count >= 3) return (PAY_3[first] || 0) * betPerLine;
+
+  if (bestCount >= 3) {
+    return (PAY_3[bestSymbol] || 0) * betPerLine;
+  }
   return 0;
 }
 
@@ -144,7 +153,11 @@ function sleep(ms) {
 
 function renderGrid(grid) {
   reelEls.forEach((el, idx) => {
-    if (el) el.textContent = grid[idx];
+    if (el) {
+      const symbol = grid[idx];
+      el.textContent = symbol;
+      el.classList.toggle("earn-reel--quai", symbol === "Q");
+    }
   });
 }
 
@@ -315,3 +328,4 @@ linesEl?.addEventListener("input", () => {
 });
 
 updateUi();
+initChatWidget();

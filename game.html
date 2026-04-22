@@ -27,7 +27,7 @@
           <div class="earn-reels earn-reels--5x3" id="fruitReels" aria-live="polite">
             <span class="earn-reel" id="cell-0">🍒</span>
             <span class="earn-reel" id="cell-1">🍋</span>
-            <span class="earn-reel" id="cell-2">🍊</span>
+            <span class="earn-reel earn-reel--quai" id="cell-2">Q</span>
             <span class="earn-reel" id="cell-3">🍇</span>
             <span class="earn-reel" id="cell-4">🍉</span>
             <span class="earn-reel" id="cell-5">🍒</span>
@@ -43,14 +43,15 @@
           </div>
 
           <div class="earn-paytable">
-            <span>🍒🍒🍒 x5</span>
-            <span>🍋🍋🍋 x6</span>
-            <span>🍊🍊🍊 x7</span>
-            <span>🍇🍇🍇 x8</span>
+            <span>3 одинаковых подряд в линии из 5</span>
+            <span>🍒🍒🍒 x4</span>
+            <span>🍋🍋🍋 x5</span>
+            <span>🍊🍊🍊 x6</span>
+            <span>🍇🍇🍇 x7</span>
             <span>🍉🍉🍉 x10</span>
-            <span>🔔🔔🔔 x15</span>
-            <span>⭐⭐⭐ x25</span>
-            <span>Any two x2</span>
+            <span>🔔🔔🔔 x14</span>
+            <span>⭐⭐⭐ x20</span>
+            <span>QQQ x35</span>
           </div>
 
           <div class="earn-controls">
@@ -77,6 +78,36 @@
 
           <p id="fruitStatus" class="earn-status">Ready to spin.</p>
         </section>
+      </section>
+
+      <section id="chatPanel" class="chat-panel" aria-label="On-chain chat">
+        <div class="chat-panel__head">
+          <h2 class="chat-panel__title">On-chain chat</h2>
+          <div class="chat-panel__head-right">
+            <button id="chatToggleBtn" class="chat-toggle-btn" type="button" aria-label="Collapse chat">▾</button>
+          </div>
+        </div>
+        <div id="chatPanelBody" class="chat-panel__body">
+          <div class="chat-tabs">
+            <button id="chatTabGlobal" class="chat-tab chat-tab--active" type="button">Global</button>
+            <button id="chatTabRoom" class="chat-tab" type="button" disabled>My Room</button>
+          </div>
+          <ul id="chatMessages" class="chat-messages" aria-live="polite"></ul>
+          <p id="chatStatus" class="chat-status"></p>
+          <div class="chat-compose">
+            <input
+              id="chatInput"
+              class="chat-input"
+              type="text"
+              maxlength="180"
+              placeholder="Message (on-chain fee applies)"
+            />
+            <button id="chatSendBtn" class="chat-send-btn" type="button" disabled>
+              Send
+            </button>
+          </div>
+          <p id="chatContractHint" class="chat-panel__hint"></p>
+        </div>
       </section>
     </main>
 

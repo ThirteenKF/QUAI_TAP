@@ -1150,15 +1150,9 @@ a.corner-btn.corner-left:focus-visible {
   padding: 14px;
   position: relative;
   border-radius: 12px;
-  border: 1px solid rgba(125, 211, 252, 0.3);
-  background:
-    radial-gradient(circle at 18% 8%, rgba(14, 165, 233, 0.18), transparent 42%),
-    radial-gradient(circle at 88% 12%, rgba(220, 38, 38, 0.2), transparent 45%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(2, 6, 23, 0.82) 100%);
-  box-shadow:
-    0 10px 30px rgba(2, 6, 23, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(8px);
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  background: rgba(10, 10, 10, 0.22);
+  backdrop-filter: blur(5px);
 }
 
 .earn-sound-btn {
@@ -1215,6 +1209,20 @@ a.corner-btn.corner-left:focus-visible {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.earn-reel--quai {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  border-color: rgba(249, 115, 22, 0.7);
+  background:
+    radial-gradient(circle at 38% 32%, rgba(255, 219, 128, 0.35), transparent 36%),
+    linear-gradient(160deg, #f59e0b 0%, #f97316 45%, #dc2626 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 196, 64, 0.45),
+    0 0 14px rgba(249, 115, 22, 0.38);
+}
+
 .earn-paytable {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1254,11 +1262,6 @@ a.corner-btn.corner-left:focus-visible {
 
 .earn-actions #wheelSpinBtn {
   grid-column: 1 / -1;
-  border-radius: 10px;
-  border: 1px solid rgba(191, 219, 254, 0.45);
-  background: linear-gradient(145deg, #06b6d4 0%, #3b82f6 55%, #6366f1 100%);
-  color: #fff;
-  box-shadow: 0 0 18px rgba(59, 130, 246, 0.35);
 }
 
 .earn-status {
@@ -1280,7 +1283,7 @@ a.corner-btn.corner-left:focus-visible {
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
-  filter: drop-shadow(0 10px 24px rgba(2, 6, 23, 0.55));
+  filter: drop-shadow(0 10px 20px rgba(120, 18, 18, 0.28));
 }
 
 .wheel-pointer {

@@ -6,7 +6,7 @@ const spinBtn = document.getElementById("wheelSpinBtn");
 const statusEl = document.getElementById("wheelStatus");
 
 const SECTORS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const COLORS = ["#dc2626", "#0ea5e9"];
+const COLORS = ["#dc2626", "#f3f4f6"];
 const FULL_CIRCLE = Math.PI * 2;
 const SECTOR_ANGLE = FULL_CIRCLE / SECTORS.length;
 
@@ -26,8 +26,8 @@ function drawWheel(angle) {
 
   ctx.clearRect(0, 0, width, height);
   const glow = ctx.createRadialGradient(cx, cy, innerR * 0.2, cx, cy, outerR * 1.1);
-  glow.addColorStop(0, "rgba(14,165,233,0.22)");
-  glow.addColorStop(0.6, "rgba(220,38,38,0.16)");
+  glow.addColorStop(0, "rgba(220,38,38,0.20)");
+  glow.addColorStop(0.6, "rgba(120,18,18,0.14)");
   glow.addColorStop(1, "rgba(2,6,23,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
@@ -55,8 +55,8 @@ function drawWheel(angle) {
       segGradient.addColorStop(0, "#ef4444");
       segGradient.addColorStop(1, "#991b1b");
     } else {
-      segGradient.addColorStop(0, "#22d3ee");
-      segGradient.addColorStop(1, "#1d4ed8");
+      segGradient.addColorStop(0, "#f8fafc");
+      segGradient.addColorStop(1, "#d1d5db");
     }
     ctx.fillStyle = segGradient;
     ctx.fill();
@@ -70,7 +70,7 @@ function drawWheel(angle) {
     ctx.save();
     ctx.translate(tx, ty);
     ctx.rotate(mid + Math.PI / 2);
-    ctx.fillStyle = "#f8fafc";
+    ctx.fillStyle = i % 2 === 0 ? "#f8fafc" : "#111827";
     ctx.font = "700 40px 'Bai Jamjuree', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -86,7 +86,7 @@ function drawWheel(angle) {
   ctx.fillStyle = centerGradient;
   ctx.fill();
   ctx.lineWidth = 4;
-  ctx.strokeStyle = "rgba(125,211,252,0.85)";
+  ctx.strokeStyle = "rgba(239,68,68,0.82)";
   ctx.stroke();
   ctx.fillStyle = "#e2e8f0";
   ctx.font = "700 48px 'Bai Jamjuree', sans-serif";
