@@ -1148,10 +1148,26 @@ a.corner-btn.corner-left:focus-visible {
   margin: 14px auto 0;
   width: min(100%, 420px);
   padding: 14px;
+  position: relative;
   border-radius: 12px;
   border: 1px solid rgba(220, 38, 38, 0.24);
   background: rgba(10, 10, 10, 0.22);
   backdrop-filter: blur(5px);
+}
+
+.earn-sound-btn {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--quai-border);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--quai-text);
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .earn-balance {
@@ -1235,6 +1251,35 @@ a.corner-btn.corner-left:focus-visible {
   min-height: 1.2em;
   color: rgba(250, 250, 250, 0.9);
   font-size: 13px;
+}
+
+.wheel-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 6px auto 0;
+}
+
+.wheel-canvas {
+  width: min(82vw, 360px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 0;
+  border-bottom: 24px solid #f5f5f5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  z-index: 2;
 }
 
 /* Лидерборд: прежняя карточка + полноэкранная оболочка */
