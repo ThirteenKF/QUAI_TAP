@@ -1,4 +1,5 @@
 import "./style.css";
+import { initChatWidget } from "./lib/chatWidget.js";
 
 const wheelCanvas = document.getElementById("wheelCanvas");
 const spinBtn = document.getElementById("wheelSpinBtn");
@@ -115,3 +116,4 @@ spinBtn?.addEventListener("click", () => {
 });
 
 drawWheel(currentAngle);
+initChatWidget();
