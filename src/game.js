@@ -2,7 +2,7 @@ import "./style.css";
 import { initChatWidget } from "./lib/chatWidget.js";
 
 const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "🍉", "🔔", "⭐", "Q"];
-const PAY_3 = { "🍒": 4, "🍋": 5, "🍊": 6, "🍇": 7, "🍉": 10, "🔔": 14, "⭐": 20, Q: 35 };
+const PAY_5 = { "🍒": 16, "🍋": 20, "🍊": 24, "🍇": 30, "🍉": 42, "🔔": 70, "⭐": 120, Q: 180 };
 const PAYLINES = [
   [1, 1, 1, 1, 1],
   [0, 0, 0, 0, 0],
@@ -17,6 +17,7 @@ const PAYLINES = [
 ];
 const REELS = 5;
 const ROWS = 3;
+const TARGET_WIN_RATE = 0.3;
 const AUTO_DELAY_MS = 750;
 const NORMAL_STEP_MS = 80;
 const NORMAL_TOTAL_MS = 900;
@@ -111,29 +112,14 @@ function getCell(grid, reel, row) {
 }
 
 function calcLineWin(line, grid, betPerLine) {
-  let streakSymbol = "";
-  let streakCount = 0;
-  let bestSymbol = "";
-  let bestCount = 0;
-
-  for (let reel = 0; reel < REELS; reel += 1) {
+  const first = getCell(grid, 0, line[0]);
+  for (let reel = 1; reel < REELS; reel += 1) {
     const symbol = getCell(grid, reel, line[reel]);
-    if (symbol === streakSymbol) {
-      streakCount += 1;
-    } else {
-      streakSymbol = symbol;
-      streakCount = 1;
-    }
-    if (streakCount > bestCount) {
-      bestCount = streakCount;
-      bestSymbol = streakSymbol;
+    if (symbol !== first) {
+      return 0;
     }
   }
-
-  if (bestCount >= 3) {
-    return (PAY_3[bestSymbol] || 0) * betPerLine;
-  }
-  return 0;
+  return (PAY_5[first] || 0) * betPerLine;
 }
 
 function calcWin(grid, totalBet, linesCount) {
@@ -163,6 +149,41 @@ function renderGrid(grid) {
 
 function randomGrid() {
   return Array.from({ length: REELS * ROWS }, () => randomSymbol());
+}
+
+function setCell(grid, reel, row, symbol) {
+  grid[reel * ROWS + row] = symbol;
+}
+
+function randomWinningSymbol() {
+  return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+}
+
+function generateWinGrid(linesCount) {
+  const grid = randomGrid();
+  const targetLine = PAYLINES[Math.floor(Math.random() * linesCount)];
+  const winner = randomWinningSymbol();
+  for (let reel = 0; reel < REELS; reel += 1) {
+    setCell(grid, reel, targetLine[reel], winner);
+  }
+  return grid;
+}
+
+function generateLossGrid(linesCount) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const grid = randomGrid();
+    if (calcWin(grid, 1, linesCount) === 0) {
+      return grid;
+    }
+  }
+  return randomGrid();
+}
+
+function generateSpinGrid(linesCount) {
+  if (Math.random() < TARGET_WIN_RATE) {
+    return generateWinGrid(linesCount);
+  }
+  return generateLossGrid(linesCount);
 }
 
 async function animateReels() {
@@ -226,7 +247,7 @@ async function spinOnce() {
   }
 
   await animateReels();
-  const grid = randomGrid();
+  const grid = generateSpinGrid(lines);
   renderGrid(grid);
 
   const win = calcWin(grid, totalBet, lines);
