@@ -6,7 +6,7 @@ const wheelCanvas = document.getElementById("wheelCanvas");
 const spinBtn = document.getElementById("wheelSpinBtn");
 const statusEl = document.getElementById("wheelStatus");
 
-const SECTORS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const SECTORS = ["0", "100Q", "WL", "200Q", "NFT QM", "500Q", "NFT", "1000Q"];
 const COLORS = ["#dc2626", "#f3f4f6"];
 const FULL_CIRCLE = Math.PI * 2;
 const SECTOR_ANGLE = FULL_CIRCLE / SECTORS.length;
@@ -77,14 +77,24 @@ function drawWheel(angle) {
     const mid = start + SECTOR_ANGLE / 2;
     const tx = Math.cos(mid) * outerR * 0.72;
     const ty = Math.sin(mid) * outerR * 0.72;
+    const label = SECTORS[i];
+    const lines = label.includes(" ") ? label.split(" ") : [label];
     ctx.save();
     ctx.translate(tx, ty);
     ctx.rotate(mid + Math.PI / 2);
     ctx.fillStyle = i % 2 === 0 ? "#f8fafc" : "#111827";
-    ctx.font = "700 40px 'Bai Jamjuree', sans-serif";
+    const longestLine = lines.reduce((max, part) => Math.max(max, part.length), 0);
+    const fontSize = longestLine >= 5 ? 30 : longestLine >= 4 ? 34 : 40;
+    ctx.font = `700 ${fontSize}px 'Bai Jamjuree', sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(SECTORS[i], 0, 0);
+    if (lines.length === 1) {
+      ctx.fillText(lines[0], 0, 0);
+    } else {
+      const lineGap = fontSize * 0.95;
+      ctx.fillText(lines[0], 0, -lineGap / 2);
+      ctx.fillText(lines[1], 0, lineGap / 2);
+    }
     ctx.restore();
   }
   ctx.restore();
