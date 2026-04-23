@@ -12,7 +12,7 @@ const FULL_CIRCLE = Math.PI * 2;
 const SECTOR_ANGLE = FULL_CIRCLE / SECTORS.length;
 const centerLogo = new Image();
 let centerLogoReady = false;
-const CENTER_LOGO_SCALE = 1.48;
+const CENTER_LOGO_SCALE = 1.82;
 
 let currentAngle = 0;
 let spinInFlight = false;
@@ -43,10 +43,10 @@ function drawWheel(angle) {
   ctx.beginPath();
   ctx.arc(cx, cy, outerR * 1.15, 0, FULL_CIRCLE);
   ctx.fill();
+
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(angle);
-
   for (let i = 0; i < SECTORS.length; i += 1) {
     const start = i * SECTOR_ANGLE - Math.PI / 2;
     const end = start + SECTOR_ANGLE;
@@ -87,7 +87,11 @@ function drawWheel(angle) {
     ctx.fillText(SECTORS[i], 0, 0);
     ctx.restore();
   }
+  ctx.restore();
 
+  // Keep center cap static while outer wheel spins.
+  ctx.save();
+  ctx.translate(cx, cy);
   ctx.beginPath();
   ctx.arc(0, 0, innerR, 0, FULL_CIRCLE);
   const centerGradient = ctx.createRadialGradient(0, -innerR * 0.2, innerR * 0.1, 0, 0, innerR);
@@ -115,7 +119,6 @@ function drawWheel(angle) {
     ctx.textBaseline = "middle";
     ctx.fillText("SPIN", 0, 6);
   }
-
   ctx.restore();
 }
 
