@@ -12,6 +12,7 @@
     />
   </head>
   <body>
+    <div id="soapBackdrop" class="soap-backdrop" aria-hidden="true"></div>
     <main class="app app--fill">
       <section class="card" aria-label="Earn">
         <a class="corner-btn corner-left" href="/">Back</a>
@@ -24,7 +25,7 @@
             <canvas id="wheelCanvas" class="wheel-canvas" width="360" height="360"></canvas>
           </div>
           <div class="earn-actions">
-            <button id="wheelSpinBtn" class="corner-btn corner-right" type="button">Spin Wheel</button>
+            <button id="wheelSpinBtn" class="corner-btn corner-right wheel-spin-btn" type="button">Spin Wheel</button>
           </div>
           <p id="wheelStatus" class="earn-status">Press Spin Wheel to start.</p>
         </section>

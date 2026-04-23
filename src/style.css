@@ -1276,6 +1276,14 @@ a.corner-btn.corner-left:focus-visible {
   display: grid;
   place-items: center;
   margin: 6px auto 0;
+  padding: 10px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(239, 68, 68, 0.24), rgba(20, 20, 20, 0) 60%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 68%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 22px rgba(226, 41, 1, 0.22);
 }
 
 .wheel-canvas {
@@ -1283,7 +1291,11 @@ a.corner-btn.corner-left:focus-visible {
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
-  filter: drop-shadow(0 10px 20px rgba(120, 18, 18, 0.28));
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  filter:
+    drop-shadow(0 12px 24px rgba(120, 18, 18, 0.34))
+    drop-shadow(0 0 18px rgba(226, 41, 1, 0.32));
 }
 
 .wheel-pointer {
@@ -1299,6 +1311,45 @@ a.corner-btn.corner-left:focus-visible {
   border-bottom: 24px solid #e2e8f0;
   filter: drop-shadow(0 2px 6px rgba(2, 6, 23, 0.75));
   z-index: 2;
+}
+
+.wheel-spin-btn {
+  position: relative;
+  overflow: visible;
+}
+
+@keyframes wheel-spin-btn-pulse {
+  0%,
+  74% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(226, 41, 1, 0),
+      0 0 0 0 rgba(239, 68, 68, 0);
+  }
+  86% {
+    transform: scale(1.045);
+    box-shadow:
+      0 0 0 6px rgba(226, 41, 1, 0.22),
+      0 0 28px 8px rgba(239, 68, 68, 0.36);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(226, 41, 1, 0),
+      0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.wheel-spin-btn:not(:disabled) {
+  animation: wheel-spin-btn-pulse 2.9s ease-in-out infinite;
+}
+
+.wheel-spin-btn:hover:not(:disabled),
+.wheel-spin-btn:focus-visible:not(:disabled) {
+  animation-play-state: paused;
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.45),
+    0 0 18px rgba(226, 41, 1, 0.32);
 }
 
 /* Лидерборд: прежняя карточка + полноэкранная оболочка */
@@ -1405,6 +1456,10 @@ a.corner-btn.corner-left:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .wheel-spin-btn:not(:disabled) {
+    animation: none;
+  }
+
   .tap-btn:not(:disabled)::after {
     animation: none;
     box-shadow: none;

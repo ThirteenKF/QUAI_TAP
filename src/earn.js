@@ -1,5 +1,6 @@
 import "./style.css";
 import { initChatWidget } from "./lib/chatWidget.js";
+import { initSoapBackdrop } from "./lib/soapBackdrop.js";
 
 const wheelCanvas = document.getElementById("wheelCanvas");
 const spinBtn = document.getElementById("wheelSpinBtn");
@@ -9,9 +10,18 @@ const SECTORS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const COLORS = ["#dc2626", "#f3f4f6"];
 const FULL_CIRCLE = Math.PI * 2;
 const SECTOR_ANGLE = FULL_CIRCLE / SECTORS.length;
+const centerLogo = new Image();
+let centerLogoReady = false;
+const CENTER_LOGO_SCALE = 1.48;
 
 let currentAngle = 0;
 let spinInFlight = false;
+
+centerLogo.src = "/images/tap-style-a-icon-only.svg";
+centerLogo.addEventListener("load", () => {
+  centerLogoReady = true;
+  drawWheel(currentAngle);
+});
 
 function drawWheel(angle) {
   if (!(wheelCanvas instanceof HTMLCanvasElement)) return;
@@ -88,11 +98,23 @@ function drawWheel(angle) {
   ctx.lineWidth = 4;
   ctx.strokeStyle = "rgba(239,68,68,0.82)";
   ctx.stroke();
-  ctx.fillStyle = "#e2e8f0";
-  ctx.font = "700 48px 'Bai Jamjuree', sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("SPIN", 0, 6);
+  if (centerLogoReady) {
+    const logoSize = innerR * CENTER_LOGO_SCALE;
+    const logoX = -logoSize / 2;
+    const logoY = -logoSize / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, innerR * 0.84, 0, FULL_CIRCLE);
+    ctx.clip();
+    ctx.drawImage(centerLogo, logoX, logoY, logoSize, logoSize);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "700 48px 'Bai Jamjuree', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("SPIN", 0, 6);
+  }
 
   ctx.restore();
 }
@@ -140,4 +162,5 @@ spinBtn?.addEventListener("click", () => {
 });
 
 drawWheel(currentAngle);
+initSoapBackdrop(document.getElementById("soapBackdrop"));
 initChatWidget();
