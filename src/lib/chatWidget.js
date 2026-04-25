@@ -11,6 +11,8 @@ import { ensureActiveQuaiChain, getPelagusEip1193 } from "./wallet/pelagus.js";
 const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
 const CHAT_FLOOD_MESSAGES_KEY = "quai_chat_flood_local_v1";
 const CHAT_FLOOD_MAX_MESSAGES = 120;
+const DIRECT_TAB_BASE_LABEL = "Onchain Secret Direct";
+const DIRECT_PREFIX = "@d1:";
 
 function shortenAddress(address) {
   if (!address || address.length < 10) {
@@ -58,6 +60,8 @@ export function initChatWidget() {
   let chatMessagesCache = [];
   let isChatCollapsed = false;
   let chatLoadToken = 0;
+  let lastDirectSeenTs = 0n;
+  let hasUnreadDirect = false;
 
   function isValidAddress(value) {
     return /^0x[a-fA-F0-9]{40}$/.test(String(value || "").trim());
@@ -67,10 +71,37 @@ export function initChatWidget() {
     return String(chatDirectTo?.value || "").trim();
   }
 
+  function encodeDirectEnvelope(to, text) {
+    return `${DIRECT_PREFIX}${to.toLowerCase()}:${text}`;
+  }
+
+  function parseDirectEnvelope(rawText) {
+    const text = String(rawText || "");
+    if (!text.startsWith(DIRECT_PREFIX)) {
+      return null;
+    }
+    const rest = text.slice(DIRECT_PREFIX.length);
+    const splitAt = rest.indexOf(":");
+    if (splitAt < 0) {
+      return null;
+    }
+    const to = rest.slice(0, splitAt).trim().toLowerCase();
+    const body = rest.slice(splitAt + 1);
+    if (!/^0x[a-f0-9]{40}$/.test(to) || !body.trim()) {
+      return null;
+    }
+    return { to, body };
+  }
+
   function syncActiveTabs() {
     for (const tab of chatTabs) {
       const room = tab.getAttribute("data-room");
       tab.className = room === activeChatRoom ? "chat-tab chat-tab--active" : "chat-tab";
+    }
+    if (chatTabDirect) {
+      chatTabDirect.textContent = hasUnreadDirect
+        ? `${DIRECT_TAB_BASE_LABEL} •`
+        : DIRECT_TAB_BASE_LABEL;
     }
   }
 
@@ -119,14 +150,11 @@ export function initChatWidget() {
 
   function currentChatRoomKey() {
     if (activeChatRoom === "direct") {
-      const to = directTargetAddress();
-      if (isValidAddress(to)) {
-        try {
-          return walletRoomKey(to);
-        } catch {
-          return GAME_MESSENGER_GLOBAL_ROOM;
-        }
+      if (!account) {
+        return GAME_MESSENGER_GLOBAL_ROOM;
       }
+      // Contract only allows GLOBAL or sender room for postMessage().
+      // Direct uses global envelope + recipient filtering.
       return GAME_MESSENGER_GLOBAL_ROOM;
     }
     if (activeChatRoom === "room" && account) {
@@ -253,15 +281,6 @@ export function initChatWidget() {
       return;
     }
 
-    if (activeChatRoom === "direct" && !isValidAddress(directTargetAddress())) {
-      chatMessagesCache = [];
-      renderChatMessages();
-      if (chatStatus && !chatSendInFlight) {
-        chatStatus.textContent = "Enter recipient wallet address for Direct chat.";
-      }
-      return;
-    }
-
     const contractAddr = getGameMessengerAddress();
     const provider = getPelagusEip1193();
     if (!provider || !contractAddr) {
@@ -280,11 +299,33 @@ export function initChatWidget() {
       if (token !== chatLoadToken || activeChatRoom !== roomAtStart) {
         return;
       }
-      chatMessagesCache = rows.map((m) => ({
+      const mapped = rows.map((m) => ({
         author: String(m.author ?? ""),
         timestamp: BigInt(m.timestamp ?? 0n),
         text: String(m.text ?? ""),
       }));
+      if (activeChatRoom === "direct" && account) {
+        const me = account.toLowerCase();
+        chatMessagesCache = mapped
+          .map((m) => {
+            const env = parseDirectEnvelope(m.text);
+            if (!env || env.to !== me) {
+              return null;
+            }
+            return { ...m, text: env.body };
+          })
+          .filter(Boolean);
+      } else {
+        chatMessagesCache = mapped;
+      }
+      if (activeChatRoom === "direct") {
+        const newestTs = chatMessagesCache.reduce(
+          (max, m) => (m.timestamp > max ? m.timestamp : max),
+          0n,
+        );
+        lastDirectSeenTs = newestTs;
+        hasUnreadDirect = false;
+      }
       renderChatMessages();
       if (chatStatus && !chatSendInFlight) {
         chatStatus.textContent = "";
@@ -341,11 +382,25 @@ export function initChatWidget() {
       const accounts = await provider.request({ method: "eth_requestAccounts" });
       account = accounts?.[0] || "";
       await assertMessengerContractReadable(provider, contractAddr);
+      const roomKey =
+        activeChatRoom === "direct"
+          ? (() => {
+              const to = directTargetAddress();
+              if (!isValidAddress(to)) {
+                throw new Error("Enter valid recipient 0x address.");
+              }
+              return GAME_MESSENGER_GLOBAL_ROOM;
+            })()
+          : currentChatRoomKey();
+      const outgoingText =
+        activeChatRoom === "direct"
+          ? encodeDirectEnvelope(directTargetAddress(), chatInput.value.trim())
+          : chatInput.value.trim();
       await postMessage(
         provider,
         contractAddr,
-        currentChatRoomKey(),
-        chatInput.value.trim(),
+        roomKey,
+        outgoingText,
       );
       chatInput.value = "";
       if (chatStatus) {
@@ -363,6 +418,57 @@ export function initChatWidget() {
     }
   }
 
+  async function pollDirectInbox() {
+    if (!account) {
+      return;
+    }
+    const contractAddr = getGameMessengerAddress();
+    const provider = getPelagusEip1193();
+    if (!provider || !contractAddr) {
+      return;
+    }
+    try {
+      await assertMessengerContractReadable(provider, contractAddr);
+      const roomKey = GAME_MESSENGER_GLOBAL_ROOM;
+      const rows = await readRecentMessages(provider, contractAddr, roomKey, 20);
+      const me = account.toLowerCase();
+      const mapped = rows
+        .map((m) => ({
+          author: String(m.author ?? ""),
+          timestamp: BigInt(m.timestamp ?? 0n),
+          text: String(m.text ?? ""),
+        }))
+        .map((m) => {
+          const env = parseDirectEnvelope(m.text);
+          if (!env || env.to !== me) {
+            return null;
+          }
+          return { ...m, text: env.body };
+        })
+        .filter(Boolean);
+      const newestTs = mapped.reduce(
+        (max, m) => (m.timestamp > max ? m.timestamp : max),
+        0n,
+      );
+      if (newestTs > lastDirectSeenTs) {
+        // Don't mark unread while already in direct tab.
+        if (activeChatRoom !== "direct") {
+          hasUnreadDirect = true;
+          if (chatStatus) {
+            const newest = [...mapped].sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1))[0];
+            if (newest) {
+              chatStatus.textContent = `New direct message from ${shortenAddress(newest.author)}.`;
+            }
+          }
+          updateUi();
+        }
+        lastDirectSeenTs = newestTs;
+      }
+    } catch {
+      // ignore background poll errors
+    }
+  }
+
   try {
     isChatCollapsed = localStorage.getItem(CHAT_COLLAPSE_KEY) === "1";
   } catch {
@@ -370,12 +476,7 @@ export function initChatWidget() {
   }
 
   chatInput?.addEventListener("input", updateUi);
-  chatDirectTo?.addEventListener("input", () => {
-    updateUi();
-    if (activeChatRoom === "direct") {
-      void loadMessages();
-    }
-  });
+  chatDirectTo?.addEventListener("input", updateUi);
   chatSendBtn?.addEventListener("click", () => {
     void onSend();
   });
@@ -400,6 +501,7 @@ export function initChatWidget() {
       if (room === "global" || room === "room" || room === "flood") {
         setActiveChatRoom(room);
       } else if (room === "direct") {
+        hasUnreadDirect = false;
         setActiveChatRoom(room);
       }
     });
@@ -424,6 +526,9 @@ export function initChatWidget() {
       return;
     }
     if (room === "global" || room === "room" || room === "flood" || room === "direct") {
+      if (room === "direct") {
+        hasUnreadDirect = false;
+      }
       setActiveChatRoom(room);
     }
   });
@@ -434,6 +539,7 @@ export function initChatWidget() {
   window.setInterval(() => {
     void detectAccount();
     void loadMessages();
+    void pollDirectInbox();
   }, 8000);
   updateUi();
 }
