@@ -14,6 +14,7 @@ const CHAT_FLOOD_MESSAGES_KEY = "quai_chat_flood_local_v1";
 const CHAT_FLOOD_MAX_MESSAGES = 120;
 const DIRECT_TAB_BASE_LABEL = "Onchain Secret Direct";
 const DIRECT_PREFIX = "@d1:";
+const FLOOD_ONCHAIN_MODE = true;
 
 function shortenAddress(address) {
   if (!address || address.length < 10) {
@@ -187,6 +188,9 @@ export function initChatWidget() {
   }
 
   function currentChatRoomKey() {
+    if (activeChatRoom === "flood") {
+      return GAME_MESSENGER_GLOBAL_ROOM;
+    }
     if (activeChatRoom === "direct") {
       if (!account) {
         return GAME_MESSENGER_GLOBAL_ROOM;
@@ -233,8 +237,9 @@ export function initChatWidget() {
     const messengerAddr = getGameMessengerAddress();
     if (chatContractHint) {
       if (activeChatRoom === "flood") {
-        chatContractHint.textContent =
-          floodRealtime?.enabled === true
+        chatContractHint.textContent = FLOOD_ONCHAIN_MODE
+          ? "Flood: on-chain global channel"
+          : floodRealtime?.enabled === true
             ? "Flood: off-chain realtime channel"
             : "Flood: local-only (set Supabase env for realtime)";
       } else if (activeChatRoom === "direct") {
@@ -264,7 +269,7 @@ export function initChatWidget() {
       chatDirectWrap.hidden = activeChatRoom !== "direct";
     }
     if (chatSendBtn) {
-      if (activeChatRoom === "flood") {
+      if (activeChatRoom === "flood" && !FLOOD_ONCHAIN_MODE) {
         chatSendBtn.disabled = !chatInput?.value?.trim() || chatSendInFlight;
       } else {
         const directOk = activeChatRoom !== "direct" || isValidAddress(directTargetAddress());
@@ -309,7 +314,7 @@ export function initChatWidget() {
     const token = ++chatLoadToken;
     const roomAtStart = activeChatRoom;
 
-    if (activeChatRoom === "flood") {
+    if (activeChatRoom === "flood" && !FLOOD_ONCHAIN_MODE) {
       const rows = readFloodMessages();
       if (token !== chatLoadToken || activeChatRoom !== roomAtStart) {
         return;
@@ -387,7 +392,7 @@ export function initChatWidget() {
       return;
     }
 
-    if (activeChatRoom === "flood") {
+    if (activeChatRoom === "flood" && !FLOOD_ONCHAIN_MODE) {
       chatSendInFlight = true;
       updateUi();
       const message = {
@@ -587,19 +592,23 @@ export function initChatWidget() {
   });
 
   void detectAccount();
-  floodRealtime = createOffchainFloodRealtime((payload) => {
-    mergeFloodMessage(payload);
-  });
+  if (!FLOOD_ONCHAIN_MODE) {
+    floodRealtime = createOffchainFloodRealtime((payload) => {
+      mergeFloodMessage(payload);
+    });
+  }
   setActiveChatRoom("flood", { load: false });
   void loadMessages();
-  window.addEventListener("storage", (event) => {
-    if (event.key !== CHAT_FLOOD_MESSAGES_KEY) {
-      return;
-    }
-    if (activeChatRoom === "flood") {
-      void loadMessages();
-    }
-  });
+  if (!FLOOD_ONCHAIN_MODE) {
+    window.addEventListener("storage", (event) => {
+      if (event.key !== CHAT_FLOOD_MESSAGES_KEY) {
+        return;
+      }
+      if (activeChatRoom === "flood") {
+        void loadMessages();
+      }
+    });
+  }
   window.setInterval(() => {
     void detectAccount();
     void loadMessages();
