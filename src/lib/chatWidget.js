@@ -14,7 +14,7 @@ const CHAT_FLOOD_MESSAGES_KEY = "quai_chat_flood_local_v1";
 const CHAT_FLOOD_MAX_MESSAGES = 120;
 const DIRECT_TAB_BASE_LABEL = "Onchain Secret Direct";
 const DIRECT_PREFIX = "@d1:";
-const FLOOD_ONCHAIN_MODE = true;
+const FLOOD_ONCHAIN_MODE = false;
 
 function shortenAddress(address) {
   if (!address || address.length < 10) {
@@ -188,7 +188,7 @@ export function initChatWidget() {
   }
 
   function currentChatRoomKey() {
-    if (activeChatRoom === "flood") {
+    if (FLOOD_ONCHAIN_MODE && activeChatRoom === "flood") {
       return GAME_MESSENGER_GLOBAL_ROOM;
     }
     if (activeChatRoom === "direct") {
