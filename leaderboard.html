@@ -30,8 +30,20 @@
         </div>
         <div id="chatPanelBody" class="chat-panel__body">
           <div class="chat-tabs">
-            <button id="chatTabGlobal" class="chat-tab chat-tab--active" type="button">Global</button>
-            <button id="chatTabRoom" class="chat-tab" type="button" disabled>My Room</button>
+            <button id="chatTabFlood" class="chat-tab" type="button" data-room="flood">Offchain Flood</button>
+            <button id="chatTabGlobal" class="chat-tab" type="button" data-room="global">Onchain Global</button>
+            <button id="chatTabRoom" class="chat-tab" type="button" data-room="room" disabled>Onchain My Room</button>
+            <button id="chatTabDirect" class="chat-tab" type="button" data-room="direct">Onchain Direct</button>
+          </div>
+          <div id="chatDirectWrap" class="chat-direct" hidden>
+            <input
+              id="chatDirectTo"
+              class="chat-input"
+              type="text"
+              maxlength="42"
+              placeholder="To address (0x...)"
+              autocomplete="off"
+            />
           </div>
           <ul id="chatMessages" class="chat-messages" aria-live="polite"></ul>
           <p id="chatStatus" class="chat-status"></p>

@@ -18,6 +18,9 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": "22.5.1"
+  },
   "dependencies": {
     "quais": "^1.0.0-alpha.54",
     "vite": "^8.0.8"

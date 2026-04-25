@@ -33,6 +33,7 @@ import { syncLeaderboardFromWallet } from "./lib/leaderboardStore.js";
 import { initSoapBackdrop } from "./lib/soapBackdrop.js";
 import { startQuaiPriceTicker } from "./lib/quaiPrice.js";
 import { startNetworkHashrateTicker } from "./lib/networkHashrate.js";
+import { initChatWidget } from "./lib/chatWidget.js";
 
 const STORAGE_KEY = "quai_tapalka_state_v1";
 
@@ -85,6 +86,7 @@ let chatMessagesCache = [];
 let isChatCollapsed = false;
 
 const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
+const ENABLE_LEGACY_CHAT = false;
 
 /** Один раз за сессию страницы — иначе дублируются accountsChanged. */
 let walletEventsBound = false;
@@ -362,44 +364,46 @@ function updateUI() {
       commitInFlight;
   }
 
-  const messengerAddr = getGameMessengerAddress();
-  if (chatContractHint) {
-    chatContractHint.textContent = messengerAddr
-      ? `Contract: ${shortenAddress(messengerAddr)}`
-      : "Contract: deploy in wallet";
-  }
+  if (ENABLE_LEGACY_CHAT) {
+    const messengerAddr = getGameMessengerAddress();
+    if (chatContractHint) {
+      chatContractHint.textContent = messengerAddr
+        ? `Contract: ${shortenAddress(messengerAddr)}`
+        : "Contract: deploy in wallet";
+    }
 
-  if (chatTabGlobal && chatTabRoom) {
-    chatTabGlobal.classList.toggle("chat-tab--active", activeChatRoom === "global");
-    chatTabRoom.classList.toggle("chat-tab--active", activeChatRoom === "room");
-    chatTabRoom.disabled = !account;
-  }
+    if (chatTabGlobal && chatTabRoom) {
+      chatTabGlobal.classList.toggle("chat-tab--active", activeChatRoom === "global");
+      chatTabRoom.classList.toggle("chat-tab--active", activeChatRoom === "room");
+      chatTabRoom.disabled = !account;
+    }
 
-  if (chatSendBtn) {
-    chatSendBtn.disabled =
-      !account ||
-      !messengerAddr ||
-      !chatInputHasText() ||
-      deployInFlight ||
-      donateInFlight ||
-      deployDonateInFlight ||
-      commitInFlight ||
-      chatSendInFlight;
-  }
+    if (chatSendBtn) {
+      chatSendBtn.disabled =
+        !account ||
+        !messengerAddr ||
+        !chatInputHasText() ||
+        deployInFlight ||
+        donateInFlight ||
+        deployDonateInFlight ||
+        commitInFlight ||
+        chatSendInFlight;
+    }
 
-  if (chatDeployBtn) {
-    chatDeployBtn.hidden = true;
-  }
+    if (chatDeployBtn) {
+      chatDeployBtn.hidden = true;
+    }
 
-  if (chatPanel) {
-    chatPanel.classList.toggle("chat-panel--collapsed", isChatCollapsed);
-  }
-  if (chatToggleBtn) {
-    chatToggleBtn.textContent = isChatCollapsed ? "▴" : "▾";
-    chatToggleBtn.setAttribute(
-      "aria-label",
-      isChatCollapsed ? "Expand chat" : "Collapse chat",
-    );
+    if (chatPanel) {
+      chatPanel.classList.toggle("chat-panel--collapsed", isChatCollapsed);
+    }
+    if (chatToggleBtn) {
+      chatToggleBtn.textContent = isChatCollapsed ? "▴" : "▾";
+      chatToggleBtn.setAttribute(
+        "aria-label",
+        isChatCollapsed ? "Expand chat" : "Collapse chat",
+      );
+    }
   }
 }
 
@@ -935,14 +939,19 @@ async function init() {
   startNetworkHashrateTicker(document.getElementById("quaiHashrate"));
   initSoapBackdrop(document.getElementById("soapBackdrop"));
   loadState();
-  loadChatUiPrefs();
+  if (ENABLE_LEGACY_CHAT) {
+    loadChatUiPrefs();
+  }
+  initChatWidget();
   if (tapBtnArt) {
     tapBtnArt.src = tapButtonImageUrl(TAP_BTN_ART_FILE);
   }
 
   updateUI();
   bindProviderEvents();
-  await loadChatMessages();
+  if (ENABLE_LEGACY_CHAT) {
+    await loadChatMessages();
+  }
 
   if (account) {
     const provider = getWallet();
@@ -957,7 +966,9 @@ async function init() {
       }
       updateUI();
       await maybeCommitTenTaps();
-      await loadChatMessages();
+      if (ENABLE_LEGACY_CHAT) {
+        await loadChatMessages();
+      }
     } else {
       walletStatus.textContent = "Open this page in a browser with Pelagus";
     }
@@ -984,38 +995,40 @@ async function init() {
   donateAmountInput?.addEventListener("input", () => {
     updateUI();
   });
-  chatInput?.addEventListener("input", () => {
-    updateUI();
-  });
-  chatSendBtn?.addEventListener("click", onSendChatMessage);
-  chatToggleBtn?.addEventListener("click", () => {
-    isChatCollapsed = !isChatCollapsed;
-    saveChatUiPrefs();
-    updateUI();
-  });
-  chatTabGlobal?.addEventListener("click", async () => {
-    activeChatRoom = "global";
-    updateUI();
-    await loadChatMessages();
-  });
-  chatTabRoom?.addEventListener("click", async () => {
-    if (!account) {
-      if (chatStatus) {
-        chatStatus.textContent = "Connect wallet to open My Room.";
+  if (ENABLE_LEGACY_CHAT) {
+    chatInput?.addEventListener("input", () => {
+      updateUI();
+    });
+    chatSendBtn?.addEventListener("click", onSendChatMessage);
+    chatToggleBtn?.addEventListener("click", () => {
+      isChatCollapsed = !isChatCollapsed;
+      saveChatUiPrefs();
+      updateUI();
+    });
+    chatTabGlobal?.addEventListener("click", async () => {
+      activeChatRoom = "global";
+      updateUI();
+      await loadChatMessages();
+    });
+    chatTabRoom?.addEventListener("click", async () => {
+      if (!account) {
+        if (chatStatus) {
+          chatStatus.textContent = "Connect wallet to open My Room.";
+        }
+        return;
       }
-      return;
-    }
-    activeChatRoom = "room";
-    updateUI();
-    await loadChatMessages();
-  });
+      activeChatRoom = "room";
+      updateUI();
+      await loadChatMessages();
+    });
 
-  if (chatPollTimerId != null) {
-    window.clearInterval(chatPollTimerId);
+    if (chatPollTimerId != null) {
+      window.clearInterval(chatPollTimerId);
+    }
+    chatPollTimerId = window.setInterval(() => {
+      void loadChatMessages();
+    }, 8000);
   }
-  chatPollTimerId = window.setInterval(() => {
-    void loadChatMessages();
-  }, 8000);
 }
 
 init();

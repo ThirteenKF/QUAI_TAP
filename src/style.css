@@ -362,8 +362,12 @@ body {
 .chat-tabs {
   margin-top: 8px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+}
+
+.chat-direct {
+  margin-top: 8px;
 }
 
 .chat-tab {
