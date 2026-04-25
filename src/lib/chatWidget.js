@@ -536,6 +536,14 @@ export function initChatWidget() {
   void detectAccount();
   setActiveChatRoom("flood", { load: false });
   void loadMessages();
+  window.addEventListener("storage", (event) => {
+    if (event.key !== CHAT_FLOOD_MESSAGES_KEY) {
+      return;
+    }
+    if (activeChatRoom === "flood") {
+      void loadMessages();
+    }
+  });
   window.setInterval(() => {
     void detectAccount();
     void loadMessages();
