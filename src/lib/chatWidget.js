@@ -6,6 +6,7 @@ import {
   readRecentMessages,
   walletRoomKey,
 } from "./gameMessengerClient.js";
+import { createOffchainFloodRealtime } from "./offchainFloodRealtime.js";
 import { ensureActiveQuaiChain, getPelagusEip1193 } from "./wallet/pelagus.js";
 
 const CHAT_COLLAPSE_KEY = "quai_chat_collapsed_v1";
@@ -62,6 +63,7 @@ export function initChatWidget() {
   let chatLoadToken = 0;
   let lastDirectSeenTs = 0n;
   let hasUnreadDirect = false;
+  let floodRealtime = null;
 
   function isValidAddress(value) {
     return /^0x[a-fA-F0-9]{40}$/.test(String(value || "").trim());
@@ -125,11 +127,12 @@ export function initChatWidget() {
       if (!Array.isArray(parsed)) return [];
       return parsed
         .map((m) => ({
+          id: String(m?.id ?? ""),
           author: String(m?.author ?? ""),
           text: String(m?.text ?? ""),
           timestamp: BigInt(Number(m?.timestamp ?? 0)),
         }))
-        .filter((m) => m.text.trim().length > 0);
+        .filter((m) => m.id && m.text.trim().length > 0);
     } catch {
       return [];
     }
@@ -138,6 +141,7 @@ export function initChatWidget() {
   function writeFloodMessages(rows) {
     try {
       const payload = rows.slice(-CHAT_FLOOD_MAX_MESSAGES).map((m) => ({
+        id: String(m.id ?? ""),
         author: String(m.author ?? ""),
         text: String(m.text ?? ""),
         timestamp: Number(m.timestamp ?? 0n),
@@ -145,6 +149,40 @@ export function initChatWidget() {
       localStorage.setItem(CHAT_FLOOD_MESSAGES_KEY, JSON.stringify(payload));
     } catch {
       // ignore
+    }
+  }
+
+  function normalizeFloodMessage(m) {
+    const id = String(m?.id ?? "").trim();
+    const author = String(m?.author ?? "").trim();
+    const text = String(m?.text ?? "").trim();
+    const ts = Number(m?.timestamp ?? 0);
+    if (!id || !text) {
+      return null;
+    }
+    const safeTs = Number.isFinite(ts) && ts > 0 ? ts : Math.floor(Date.now() / 1000);
+    return {
+      id,
+      author,
+      text,
+      timestamp: BigInt(safeTs),
+    };
+  }
+
+  function mergeFloodMessage(payload, { rerender = true } = {}) {
+    const next = normalizeFloodMessage(payload);
+    if (!next) {
+      return;
+    }
+    const rows = readFloodMessages();
+    if (rows.some((m) => m.id === next.id)) {
+      return;
+    }
+    rows.push(next);
+    writeFloodMessages(rows);
+    if (rerender && activeChatRoom === "flood") {
+      chatMessagesCache = rows;
+      renderChatMessages();
     }
   }
 
@@ -195,7 +233,10 @@ export function initChatWidget() {
     const messengerAddr = getGameMessengerAddress();
     if (chatContractHint) {
       if (activeChatRoom === "flood") {
-        chatContractHint.textContent = "Flood: private local channel (off-chain)";
+        chatContractHint.textContent =
+          floodRealtime?.enabled === true
+            ? "Flood: off-chain realtime channel"
+            : "Flood: local-only (set Supabase env for realtime)";
       } else if (activeChatRoom === "direct") {
         const to = directTargetAddress();
         chatContractHint.textContent = isValidAddress(to)
@@ -349,13 +390,25 @@ export function initChatWidget() {
     if (activeChatRoom === "flood") {
       chatSendInFlight = true;
       updateUi();
-      const rows = readFloodMessages();
-      rows.push({
+      const message = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         author: account || "Local",
         timestamp: BigInt(Math.floor(Date.now() / 1000)),
         text: chatInput.value.trim(),
-      });
+      };
+      const rows = readFloodMessages();
+      rows.push(message);
       writeFloodMessages(rows);
+      if (floodRealtime?.enabled) {
+        try {
+          await floodRealtime.sendMessage({
+            ...message,
+            timestamp: Number(message.timestamp),
+          });
+        } catch {
+          // keep local send even if realtime failed
+        }
+      }
       chatInput.value = "";
       chatMessagesCache = rows;
       renderChatMessages();
@@ -534,6 +587,9 @@ export function initChatWidget() {
   });
 
   void detectAccount();
+  floodRealtime = createOffchainFloodRealtime((payload) => {
+    mergeFloodMessage(payload);
+  });
   setActiveChatRoom("flood", { load: false });
   void loadMessages();
   window.addEventListener("storage", (event) => {
